@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Cluedo En Ligne - Salons Privés</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #111; color: #fff; margin: 15px; }
+        .container { max-width: 1300px; margin: 0 auto; display: grid; grid-template-columns: 600px 1fr 300px; gap: 20px; }
+        .box { background: #1c1c1c; padding: 15px; border-radius: 8px; border: 1px solid #2a2a2a; }
+        h1, h2, h3 { color: #e74c3c; margin-top: 0; }
+        
+        .board-container { position: relative; width: 600px; height: 600px; background: #222; border: 3px solid #333; border-radius: 6px; overflow: hidden; }
+        #board-img { width: 100%; height: 100%; object-fit: contain; }
+        
+        .zone-piece { position: absolute; width: 33.33%; height: 33.33%; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: transparent; font-weight: bold; font-size: 13px; transition: all 0.2s; }
+        .zone-piece:hover { background: rgba(231, 76, 60, 0.2); border: 2px dashed #e74c3c; color: #fff; text-shadow: 1px 1px 3px #000; }
+        .pion { position: absolute; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 6px #000; font-size: 11px; font-weight: bold; text-align: center; line-height: 26px; color: #fff; transition: all 0.4s ease; z-index: 10; }
+
+        button { background: #e74c3c; color: #fff; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
+        button:hover { background: #c0392b; }
+        button:disabled { background: #444 !important; cursor: not-allowed; color: #777; }
+        select, input { padding: 8px; background: #252525; color: #fff; border: 1px solid #333; border-radius: 4px; margin-bottom: 8px; width: 100%; box-sizing: border-box; }
+        
+        .log-box { height: 180px; overflow-y: auto; background: #090909; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 4px; border: 1px solid #222; color: #aaa; }
+        .cards-container { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+        .card { background: #2c3e50; padding: 6px 10px; border-radius: 4px; border-left: 4px solid #e74c3c; font-weight: bold; font-size: 12px; }
+        
+        .notebook table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .notebook th, .notebook td { border: 1px solid #333; padding: 4px; }
+        .notebook tr:has(input:checked) { background: #0a0a0a !important; color: #555; text-decoration: line-through; }
+        .hidden { display: none; }
+        .de-box { background: #2c3e50; padding: 10px; border-radius: 6px; text-align: center; font-size: 18px; margin-bottom: 10px; border: 1px solid #34495e; }
+        .code-display { font-size: 24px; color: #2ecc71; font-weight: bold; letter-spacing: 4px; background: #000; padding: 5px; border-radius: 4px; margin: 10px 0; }
+
+        /* Style des Règles */
+        .rules-btn { background: #34495e; margin-bottom: 10px; font-size: 13px; }
+        .rules-btn:hover { background: #2c3e50; }
+        .rules-content { background: #111; padding: 10px; border-radius: 4px; border: 1px solid #333; font-size: 11px; line-height: 1.4; max-height: 250px; overflow-y: auto; margin-bottom: 15px; }
+        .rules-content ul { padding-left: 15px; margin: 5px 0; }
+        .rules-content li { margin-bottom: 4px; }
+    </style>
+</head>
+<body>
+
+    <div id="lobby" class="box" style="max-width: 400px; margin: 50px auto; text-align: center;">
+        <h1>🕵️‍♂️ Cluedo Privé</h1>
+        <input type="text" id="username" placeholder="Ton pseudo..." />
+        <hr style="border-color:#333; margin:15px 0;">
+        <button onclick="createRoom()" style="background:#3498db;">Créer une partie privée</button>
+        <p style="color:#666; margin:8px 0;">— OU —</p>
+        <input type="text" id="room-code-input" placeholder="Code de la partie (ex: ABCD)..." style="text-transform: uppercase;" />
+        <button onclick="joinRoomByCode()">Rejoindre la partie</button>
+        
+        <div id="lobby-status" class="hidden" style="margin-top:20px; border-top:1px dashed #444; padding-top:15px;">
+            <p>Partage ce code à tes amis :</p>
+            <div id="display-room-code" class="code-display">----</div>
+            <h3>Détectives dans le salon :</h3>
+            <ul id="player-list" style="padding:0; list-style:none;"></ul>
+            <button id="start-btn" onclick="sendStartGame()" style="background:#2ecc71;">Lancer la partie 🚀</button>
+        </div>
+    </div>
+
+    <div id="game-board" class="container hidden">
+        <div class="board-container">
+            <img id="board-img" src="/static/Plateau.png">
+            <div id="pions-layer"></div>
+
+            <div class="zone-piece" style="top:0; left:0;" onclick="tenterDeplacement('Salon', 0, 0)">Salon</div>
+            <div class="zone-piece" style="top:0; left:33.33%;" onclick="tenterDeplacement('Véranda', 1, 0)">Véranda</div>
+            <div class="zone-piece" style="top:0; left:66.66%;" onclick="tenterDeplacement('Salle de Bal', 2, 0)">Salle de Bal</div>
+            
+            <div class="zone-piece" style="top:33.33%; left:0;" onclick="tenterDeplacement('Salle à Manger', 0, 1)">Salle à Manger</div>
+            <div class="zone-piece" style="top:33.33%; left:33.33%;" onclick="tenterDeplacement('Cuisine', 1, 1)">Cuisine</div>
+            <div class="zone-piece" style="top:33.33%; left:66.66%;" onclick="tenterDeplacement('Bibliothèque', 2, 1)">Bibliothèque</div>
+            
+            <div class="zone-piece" style="top:66.66%; left:0;" onclick="tenterDeplacement('Billard', 0, 2)">Billard</div>
+            <div class="zone-piece" style="top:66.66%; left:33.33%;" onclick="tenterDeplacement('Bureau', 1, 2)">Bureau</div>
+            <div class="zone-piece" style="top:66.66%; left:66.66%;" onclick="tenterDeplacement('Hall', 2, 2)">Hall</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:15px;">
+            <div class="box">
+                <h2>📢 Statut</h2>
+                <p id="turn-indicator" style="color:#f1c40f; font-weight:bold;"></p>
+                <p id="pos-indicator" style="color:#bbb; font-style:italic;"></p>
+                
+                <div id="des-zone" class="hidden">
+                    <div class="de-box">🎲 Points restants : <b id="mouvements-restants">0</b></div>
+                    <button id="btn-des" onclick="lancerLesDes()" style="background:#9b59b6;">LANCER LES DÉS</button>
+                </div>
+
+                <div id="action-zone" class="hidden" style="margin-top:10px;">
+                    <label>Suspect :</label>
+                    <select id="select-suspect">
+                        <option>Mlle Rose</option><option>Colonel Moutarde</option><option>Mme Pervenche</option><option>Docteur Olive</option><option>Mme Leblanc</option><option>Professeur Violet</option>
+                    </select>
+                    <label>Arme :</label>
+                    <select id="select-arme">
+                        <option>Chandelier</option><option>Couteau</option><option>Revolver</option><option>Corde</option><option>Matraque</option><option>Clé Anglaise</option>
+                    </select>
+                    <label>Lieu :</label>
+                    <select id="select-lieu" disabled>
+                        <option>Salon</option><option>Véranda</option><option>Salle de Bal</option><option>Salle à Manger</option><option>Cuisine</option><option>Bibliothèque</option><option>Billard</option><option>Bureau</option><option>Hall</option>
+                    </select>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="validerAction('hypothese')" style="background:#2ecc71;">Demander (Hypothèse)</button>
+                        <button onclick="validerAction('accusation')" style="background:#d35400;">🚨 ACCUSATION ULTIME</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="box">
+                <h3>🃏 Tes Cartes</h3>
+                <div id="my-cards" class="cards-container"></div>
+            </div>
+
+            <div class="box" style="flex-grow:1;">
+                <h3>📜 Historique</h3>
+                <div id="logs" class="log-box"></div>
+            </div>
+        </div>
+
+        <div class="box notebook">
+            <button class="rules-btn" onclick="toggleRules()">📖 Afficher/Masquer les Règles</button>
+            <div id="rules-section" class="rules-content hidden">
+                <b style="color:#e74c3c;">Objectif :</b> Trouver quel suspect a commis le crime, avec quelle arme, et dans quel lieu.<br><br>
+                <b>Déroulement d'un tour :</b>
+                <ul>
+                    <li>1. Cliquez sur <b>Lancer les Dés</b> pour obtenir vos points de mouvements.</li>
+                    <li>2. Cliquez sur l'une des cases du plateau pour vous déplacer (chaque case de distance consomme 3 points).</li>
+                    <li>3. Faites une <b>Hypothèse</b> (Demande) : le lieu est automatiquement bloqué sur votre pièce actuelle. Le script interrogera les autres joueurs. Si l'un d'eux possède une de vos cartes demandées, elle vous sera secrètement révélée !</li>
+                </ul>
+                <b>🚨 L'Accusation Ultime :</b> Si vous pensez avoir résolu l'énigme complète, portez une accusation. 
+                <ul>
+                    <li><span style="color:#2ecc71;">Si c'est juste :</span> Vous gagnez immédiatement la partie !</li>
+                    <li><span style="color:#e74c3c;">Si c'est faux :</span> Vous êtes définitivement éliminé et vos dés sont bloqués, mais vos cartes restent en jeu pour contredire les autres.</li>
+                </ul>
+            </div>
+
+            <h3>📝 Carnet</h3>
+            <table>
+                <tr style="background:#333;"><td colspan="2">Suspects</td></tr>
+                <tr><td>Mlle Rose</td><td><input type="checkbox"></td></tr>
+                <tr><td>Colonel Moutarde</td><td><input type="checkbox"></td></tr>
+                <tr><td>Mme Pervenche</td><td><input type="checkbox"></td></tr>
+                <tr><td>Docteur Olive</td><td><input type="checkbox"></td></tr>
+                <tr><td>Mme Leblanc</td><td><input type="checkbox"></td></tr>
+                <tr><td>Professeur Violet</td><td><input type="checkbox"></td></tr>
+                <tr style="background:#333;"><td colspan="2">Armes</td></tr>
+                <tr><td>Chandelier</td><td><input type="checkbox"></td></tr>
+                <tr><td>Couteau</td><td><input type="checkbox"></td></tr>
+                <tr><td>Revolver</td><td><input type="checkbox"></td></tr>
+                <tr><td>Corde</td><td><input type="checkbox"></td></tr>
+                <tr><td>Matraque</td><td><input type="checkbox"></td></tr>
+                <tr><td>Clé Anglaise</td><td><input type="checkbox"></td></tr>
+                <tr style="background:#333;"><td colspan="2">Lieux</td></tr>
+                <tr><td>Salon</td><td><input type="checkbox"></td></tr>
+                <tr><td>Véranda</td><td><input type="checkbox"></td></tr>
+                <tr><td>Salle de Bal</td><td><input type="checkbox"></td></tr>
+                <tr><td>Salle à Manger</td><td><input type="checkbox"></td></tr>
+                <tr><td>Cuisine</td><td><input type="checkbox"></td></tr>
+                <tr><td>Bibliothèque</td><td><input type="checkbox"></td></tr>
+                <tr><td>Billard</td><td><input type="checkbox"></td></tr>
+                <tr><td>Bureau</td><td><input type="checkbox"></td></tr>
+                <tr><td>Hall</td><td><input type="checkbox"></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let myTurn = false;
+        let monNom = "";
+        let currentRoom = "";
+        let maPosition = "Hall";
+        let localPlayerPositions = {};
+        let imEliminated = false;
+        
+        let desLances = false;
+        let mouvementsDispo = 0;
+        let currentGridX = 2; 
+        let currentGridY = 2;
+
+        const coordsPieces = {
+            "Salon": {x: 16, y: 16}, "Véranda": {x: 50, y: 16}, "Salle de Bal": {x: 83, y: 16},
+            "Salle à Manger": {x: 16, y: 50}, "Cuisine": {x: 50, y: 50}, "Bibliothèque": {x: 83, y: 50},
+            "Billard": {x: 16, y: 83}, "Bureau": {x: 50, y: 83}, "Hall": {x: 83, y: 83}
+        };
+
+        const couleurs = ["#e74c3c", "#f1c40f", "#3498db", "#2ecc71", "#ffffff", "#9b59b6"];
+
+        function toggleRules() {
+            document.getElementById('rules-section').classList.toggle('hidden');
+        }
+
+        function createRoom() {
+            const name = document.getElementById('username').value.trim();
+            if(!name) return alert("Choisis un pseudo !");
+            monNom = name;
+            socket.emit('create_game', { username: name });
+        }
+
+        function joinRoomByCode() {
+            const name = document.getElementById('username').value.trim();
+            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+            if(!name || !code) return alert("Remplis ton pseudo et le code de partie !");
+            monNom = name;
+            socket.emit('join_game', { username: name, room: code });
+        }
+
+        socket.on('room_created', (data) => {
+            currentRoom = data.room;
+            document.getElementById('display-room-code').innerText = currentRoom;
+            document.getElementById('player-list').innerHTML = data.players.map(p => `<li>👤 <b>${p}</b></li>`).join('');
+            document.getElementById('lobby-status').classList.remove('hidden');
+        });
+
+        socket.on('room_update', (data) => {
+            currentRoom = data.room;
+            document.getElementById('display-room-code').innerText = currentRoom;
+            document.getElementById('player-list').innerHTML = data.players.map(p => `<li>👤 <b>${p}</b></li>`).join('');
+            document.getElementById('lobby-status').classList.remove('hidden');
+        });
+
+        function sendStartGame() { 
+            socket.emit('start_game', { room: currentRoom }); 
+        }
+
+        function log(m) { const b = document.getElementById('logs'); b.innerHTML += `<div>${m}</div>`; b.scrollTop = b.scrollHeight; }
+
+        function lancerLesDes() {
+            if(!myTurn || desLances || imEliminated) return;
+            socket.emit('lancer_des', { room: currentRoom });
+        }
+
+        socket.on('des_resultat', (data) => {
+            mouvementsDispo = data.total;
+            desLances = true;
+            document.getElementById('mouvements-restants').innerText = mouvementsDispo;
+            document.getElementById('btn-des').disabled = true;
+        });
+
+        function tenterDeplacement(nomPiece, targetGridX, targetGridY) {
+            if(!myTurn || imEliminated) return;
+            if(!desLances) return alert("🎲 Clique d'abord sur LANCER LES DÉS !");
+            
+            let distance = (Math.abs(targetGridX - currentGridX) + Math.abs(targetGridY - currentGridY)) * 3;
+            if (distance === 0) return; 
+
+            if(mouvementsDispo >= distance) {
+                mouvementsDispo -= distance;
+                currentGridX = targetGridX;
+                currentGridY = targetGridY;
+                maPosition = nomPiece;
+                
+                document.getElementById('mouvements-restants').innerText = mouvementsDispo;
+                document.getElementById('pos-indicator').innerHTML = `📍 Position : <b>${maPosition}</b>`;
+                document.getElementById('select-lieu').value = nomPiece;
+                
+                socket.emit('player_move', { room: currentRoom, piece: nomPiece });
+            } else {
+                alert(`Mouvement impossible (${distance} requis, tu as ${mouvementsDispo}).`);
+            }
+        }
+
+        function validerAction(type) {
+            if(!myTurn || imEliminated) return;
+            const data = {
+                room: currentRoom,
+                suspect: document.getElementById('select-suspect').value,
+                arme: document.getElementById('select-arme').value,
+                lieu: document.getElementById('select-lieu').value
+            };
+            socket.emit(type === 'hypothese' ? 'action_hypothese' : 'action_accusation', data);
+        }
+
+        socket.on('game_started', (data) => {
+            document.getElementById('lobby').classList.add('hidden');
+            document.getElementById('game-board').classList.remove('hidden');
+            document.getElementById('my-cards').innerHTML = data.cards.map(c => `<div class="card">${c}</div>`).join('');
+            
+            currentGridX = 2; currentGridY = 2; maPosition = "Hall";
+            document.getElementById('pos-indicator').innerHTML = `📍 Position initiale : <b>${maPosition}</b>`;
+            socket.emit('player_move', { room: currentRoom, piece: 'Hall' });
+        });
+
+        socket.on('pion_update', (data) => {
+            localPlayerPositions[data.sid] = { name: data.name, piece: data.piece };
+            renderPions();
+        });
+
+        function renderPions() {
+            const layer = document.getElementById('pions-layer');
+            layer.innerHTML = "";
+            let idx = 0;
+            for (let sid in localPlayerPositions) {
+                let p = localPlayerPositions[sid];
+                let base = coordsPieces[p.piece] || {x:83, y:83};
+                let offset = idx * 4; 
+                let c = couleurs[idx % 6];
+                let tColor = c === "#ffffff" ? "#000" : "#fff";
+                layer.innerHTML += `<div class="pion" style="top:${base.y - 2 + offset}%; left:${base.x - 2 + offset}%; background:${c}; color:${tColor};" title="${p.name}">${p.name.substring(0,2).toUpperCase()}</div>`;
+                idx++;
+            }
+        }
+
+        socket.on('turn_update', (data) => {
+            if (imEliminated) return;
+            myTurn = data.is_your_turn;
+            
+            const indicator = document.getElementById('turn-indicator');
+            const actionZone = document.getElementById('action-zone');
+            const desZone = document.getElementById('des-zone');
+            const inputs = document.querySelectorAll('#action-zone select, #action-zone button');
+            
+            if(myTurn) {
+                indicator.innerHTML = "🔴 C'est à TOI ! Lance les dés.";
+                desZone.classList.remove('hidden');
+                document.getElementById('btn-des').disabled = false;
+                desLances = false;
+                mouvementsDispo = 0;
+                document.getElementById('mouvements-restants').innerText = 0;
+                actionZone.classList.remove('hidden');
+                inputs.forEach(el => { if(el.id !== 'select-lieu') el.disabled = false; });
+            } else {
+                indicator.innerHTML = `⏳ Tour de : <b>${data.current_player}</b>`;
+                inputs.forEach(el => el.disabled = true);
+            }
+        });
+
+        socket.on('player_eliminated', () => {
+            imEliminated = true;
+            myTurn = false;
+            document.getElementById('turn-indicator').innerHTML = "❌ ÉLIMINÉ !";
+            document.getElementById('des-zone').classList.add('hidden');
+            document.querySelectorAll('#action-zone select, #action-zone button').forEach(el => el.disabled = true);
+        });
+
+        socket.on('hypothese_result', (data) => { alert(data.msg); log(`🔍 Révélation : ${data.msg}`); });
+        socket.on('log', (data) => { log(data.msg); });
+        socket.on('game_over', (data) => { alert(data.msg); log(`🏁 <b>${data.msg}</b>`); });
+        socket.on('error', (data) => alert(data.msg));
+    </script>
+</body>
+</html>
