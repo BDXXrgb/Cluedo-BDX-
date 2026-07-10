@@ -270,7 +270,7 @@
                 room: currentRoom,
                 suspect: document.getElementById('select-suspect').value,
                 arme: document.getElementById('select-arme').value,
-                lieu: document.getElementById('select-lieu').value
+                lieu: maPosition
             };
             socket.emit(type === 'hypothese' ? 'action_hypothese' : 'action_accusation', data);
         }
@@ -282,6 +282,7 @@
             
             currentGridX = 2; currentGridY = 2; maPosition = "Hall";
             document.getElementById('pos-indicator').innerHTML = `📍 Position initiale : <b>${maPosition}</b>`;
+            document.getElementById('select-lieu').value = "Hall";
             socket.emit('player_move', { room: currentRoom, piece: 'Hall' });
         });
 
@@ -300,7 +301,9 @@
                 let offset = idx * 4; 
                 let c = couleurs[idx % 6];
                 let tColor = c === "#ffffff" ? "#000" : "#fff";
-                layer.innerHTML += `<div class="pion" style="top:${base.y - 2 + offset}%; left:${base.x - 2 + offset}%; background:${c}; color:${tColor};" title="${p.name}">${p.name.substring(0,2).toUpperCase()}</div>`;
+                
+                // Correction de la concaténation CSS (%) pour forcer le déplacement des ronds sur la carte
+                layer.innerHTML += `<div class="pion" style="top: calc(${base.y}% + ${offset}px - 13px); left: calc(${base.x}% + ${offset}px - 13px); background:${c}; color:${tColor};" title="${p.name}">${p.name.substring(0,2).toUpperCase()}</div>`;
                 idx++;
             }
         }
