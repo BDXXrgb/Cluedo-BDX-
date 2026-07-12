@@ -33,9 +33,11 @@
         .de-box { background: #2c3e50; padding: 10px; border-radius: 6px; text-align: center; font-size: 18px; margin-bottom: 10px; border: 1px solid #34495e; }
         .code-display { font-size: 24px; color: #2ecc71; font-weight: bold; letter-spacing: 4px; background: #000; padding: 5px; border-radius: 4px; margin: 10px 0; }
 
-        /* Style des Règles */
+        /* Style des Règles et Admin */
         .rules-btn { background: #34495e; margin-bottom: 10px; font-size: 13px; }
         .rules-btn:hover { background: #2c3e50; }
+        .admin-btn { background: #d35400; margin-bottom: 10px; font-size: 13px; }
+        .admin-btn:hover { background: #a04000; }
         .rules-content { background: #111; padding: 10px; border-radius: 4px; border: 1px solid #333; font-size: 11px; line-height: 1.4; max-height: 250px; overflow-y: auto; margin-bottom: 15px; }
         .rules-content ul { padding-left: 15px; margin: 5px 0; }
         .rules-content li { margin-bottom: 4px; }
@@ -122,6 +124,20 @@
         </div>
 
         <div class="box notebook">
+            <div id="admin-panel-toggle" class="hidden">
+                <button class="admin-btn" onclick="toggleAdmin()">⚙️ Panneau Admin (Bedy)</button>
+                <div id="admin-section" class="rules-content hidden" style="border-color: #d35400;">
+                    <b style="color:#d35400;">Commandes Générales :</b><br><br>
+                    <label>Pseudo à ressusciter :</label>
+                    <input type="text" id="admin-revive-target" placeholder="Ex: Joueur123..." />
+                    <button onclick="adminRevive()" style="background:#27ae60; margin-bottom:10px;">Revive (Réintégrer)</button>
+                    
+                    <hr style="border-color:#333; margin:10px 0;">
+                    <button onclick="adminReveal()" style="background:#2980b9;">Reveal (Voir la solution finale)</button>
+                    <div id="admin-reveal-result" style="margin-top:8px; color:#2ecc71; font-weight:bold; font-family:monospace;"></div>
+                </div>
+            </div>
+
             <button class="rules-btn" onclick="toggleRules()">📖 Afficher/Masquer les Règles</button>
             <div id="rules-section" class="rules-content hidden">
                 <b style="color:#e74c3c;">Objectif :</b> Trouver quel suspect a commis le crime, avec quelle arme, et dans quel lieu.<br><br>
@@ -194,10 +210,23 @@
             document.getElementById('rules-section').classList.toggle('hidden');
         }
 
+        function toggleAdmin() {
+            document.getElementById('admin-section').classList.toggle('hidden');
+        }
+
+        function checkAdminAccess() {
+            if (monNom === "Bedy") {
+                document.getElementById('admin-panel-toggle').classList.remove('hidden');
+            } else {
+                document.getElementById('admin-panel-toggle').classList.add('hidden');
+            }
+        }
+
         function createRoom() {
             const name = document.getElementById('username').value.trim();
             if(!name) return alert("Choisis un pseudo !");
             monNom = name;
+            checkAdminAccess();
             socket.emit('create_game', { username: name });
         }
 
@@ -206,6 +235,7 @@
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
             if(!name || !code) return alert("Remplis ton pseudo et le code de partie !");
             monNom = name;
+            checkAdminAccess();
             socket.emit('join_game', { username: name, room: code });
         }
 
@@ -275,6 +305,31 @@
             socket.emit(type === 'hypothese' ? 'action_hypothese' : 'action_accusation', data);
         }
 
+        // Fonctions d'administration secrètes
+        function adminRevive() {
+            if (monNom !== "Bedy") return;
+            const target = document.getElementById('admin-revive-target').value.trim();
+            if (!target) return alert("Spécifie le pseudo exact à ressusciter.");
+            socket.emit('admin_revive_player', { room: currentRoom, target_name: target });
+        }
+
+        function adminReveal() {
+            if (monNom !== "Bedy") return;
+            socket.emit('admin_reveal_solution', { room: currentRoom });
+        }
+
+        socket.on('admin_reveal_result', (data) => {
+            if (monNom !== "Bedy") return;
+            document.getElementById('admin-reveal-result').innerHTML = `🕵️‍♂️ Crime : ${data.suspect} + ${data.arme} + ${data.lieu}`;
+        });
+
+        socket.on('you_are_revived', () => {
+            imEliminated = false;
+            myTurn = false;
+            document.getElementById('turn-indicator').innerHTML = "⏳ Réintégré ! En attente de ton tour.";
+            alert("L'administrateur vous a réintégré dans la partie !");
+        });
+
         socket.on('game_started', (data) => {
             document.getElementById('lobby').classList.add('hidden');
             document.getElementById('game-board').classList.remove('hidden');
@@ -284,6 +339,7 @@
             document.getElementById('pos-indicator').innerHTML = `📍 Position initiale : <b>${maPosition}</b>`;
             document.getElementById('select-lieu').value = "Hall";
             socket.emit('player_move', { room: currentRoom, piece: 'Hall' });
+            checkAdminAccess();
         });
 
         socket.on('pion_update', (data) => {
@@ -302,7 +358,6 @@
                 let c = couleurs[idx % 6];
                 let tColor = c === "#ffffff" ? "#000" : "#fff";
                 
-                // Correction de la concaténation CSS (%) pour forcer le déplacement des ronds sur la carte
                 layer.innerHTML += `<div class="pion" style="top: calc(${base.y}% + ${offset}px - 13px); left: calc(${base.x}% + ${offset}px - 13px); background:${c}; color:${tColor};" title="${p.name}">${p.name.substring(0,2).toUpperCase()}</div>`;
                 idx++;
             }
@@ -340,7 +395,13 @@
             document.querySelectorAll('#action-zone select, #action-zone button').forEach(el => el.disabled = true);
         });
 
-        socket.on('hypothese_result', (data) => { alert(data.msg); log(`🔍 Révélation : ${data.msg}`); });
+        socket.on('hypothese_result', (data) => { 
+            // Sécurité : Seul le demandeur reçoit l'alerte pop-up détaillée
+            if(data.demandeurs_uniquement && data.carte_devoilee) {
+                alert(`Une carte vous a été révélée : ${data.carte_devoilee}`);
+            }
+        });
+        
         socket.on('log', (data) => { log(data.msg); });
         socket.on('game_over', (data) => { alert(data.msg); log(`🏁 <b>${data.msg}</b>`); });
         socket.on('error', (data) => alert(data.msg));
