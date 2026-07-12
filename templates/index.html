@@ -118,7 +118,7 @@
         <p style="color:#bbb;">Adaptez l'interface pour votre écran :</p>
         <div class="device-grid">
             <div class="device-card" onclick="setDeviceMode('phone')"><span>📱</span><b>Téléphone</b></div>
-            <div class="device-card" onclick="setDeviceMode('tablet')"><span>平板</span><b>Tablette</b></div>
+            <div class="device-card" onclick="setDeviceMode('tablet')"><span>📋</span><b>Tablette</b></div>
             <div class="device-card active" onclick="setDeviceMode('pc')"><span>💻</span><b>Ordinateur</b></div>
         </div>
         
@@ -307,7 +307,6 @@
         const couleurs = ["#e74c3c", "#f1c40f", "#3498db", "#2ecc71", "#e67e22", "#9b59b6"];
         const EMOJIS_LIST = ["😀","😂","🤣","😊","😍","🤔","🤫","👀","🕵️‍♂️","🔍","🩸","🔪","🔫","🚪","🏰","🎲","🚨","😱","☠️","🏆","🍿","🍺","🔥"];
 
-        // BASE DE DONNÉES DE CORRESPONDANCES POUR DESSINER LES CARTES JEU DE SOCIÉTÉ
         const CARD_DATA = {
             "Mlle Rose": { type: "suspect", icon: "🔴" }, "Colonel Moutarde": { type: "suspect", icon: "🟡" },
             "Mme Pervenche": { type: "suspect", icon: "🔵" }, "Docteur Olive": { type: "suspect", icon: "🟢" },
@@ -321,12 +320,14 @@
             "Billard": { type: "lieu", icon: "🎱" }, "Bureau": { type: "lieu", icon: "🖥️" }, "Hall": { type: "lieu", icon: "🚪" }
         };
 
-        // AUDIO GENERATOR NATIF (PAS BESOIN DE FICHIERS MP3 EXTERNES !)
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // AUDIO GENERATOR NATIF SÉCURISÉ
+        let audioCtx = null;
         function playSound(type) {
             try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
                 if (type === 'dice') {
-                    // Bruit blanc court pour simuler le roulement des dés
                     let bufferSize = audioCtx.sampleRate * 0.15,
                         buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate),
                         data = buffer.getChannelData(0);
@@ -335,14 +336,12 @@
                     let filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400;
                     noise.connect(filter); filter.connect(audioCtx.destination); noise.start();
                 } else if (type === 'danger') {
-                    // Alerte sirène d'élimination aigu-grave
                     let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
                     osc.type = 'sawtooth'; osc.frequency.setValueAtTime(600, audioCtx.currentTime);
                     osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.4);
                     osc.connect(gain); gain.connect(audioCtx.destination); gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
                     osc.start(); osc.stop(audioCtx.currentTime + 0.4);
                 } else if (type === 'win') {
-                    // Petite mélodie victorieuse joyeuse
                     [440, 554, 659, 880].forEach((f, i) => {
                         let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
                         osc.frequency.value = f; osc.connect(gain); gain.connect(audioCtx.destination);
@@ -353,29 +352,36 @@
             } catch(e){}
         }
 
-        // AU CHARGEMENT DE LA PAGE, ON DEMANDE LE CLASSEMENT
-        window.onload = function() {
+        // CHARGEMENT LEADERBOARD SÉCURISÉ (Empêche le crash JS)
+        socket.on('connect', () => {
             socket.emit('get_leaderboard');
-        };
+        });
 
         socket.on('leaderboard_data', (data) => {
             const box = document.getElementById('leaderboard-rows');
-            if(!data.top || data.top.length === 0) {
+            if (!box) return;
+            if(!data || !data.top || data.top.length === 0) {
                 box.innerHTML = `<p style="color:#666; font-size:12px; text-align:center; margin:5px 0;">Aucune victoire pour le moment.</p>`;
                 return;
             }
-            box.innerHTML = data.top.map((item, index) => `
-                <div class="leaderboard-item">
-                    <span>${index === 0 ? '👑' : (index+1) + '.'} <b>${item[0]}</b></span>
-                    <span style="color:#f39c12; font-weight:bold;">${item[1]} ${item[1] > 1 ? 'victoires' : 'victoire'}</span>
-                </div>
-            `).join('');
+            try {
+                box.innerHTML = data.top.map((item, index) => `
+                    <div class="leaderboard-item">
+                        <span>${index === 0 ? '👑' : (index+1) + '.'} <b>${item[0]}</b></span>
+                        <span style="color:#f39c12; font-weight:bold;">${item[1]} ${item[1] > 1 ? 'victoires' : 'victoire'}</span>
+                    </div>
+                `).join('');
+            } catch(e) {
+                box.innerHTML = `<p style="color:#666; font-size:12px; text-align:center; margin:5px 0;">Erreur affichage données.</p>`;
+            }
         });
 
         function setDeviceMode(mode) {
             selectedDevice = mode;
             document.querySelectorAll('.device-card').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
         }
 
         function confirmDevice() {
@@ -384,6 +390,8 @@
             container.classList.add('mode-' + selectedDevice);
             document.getElementById('device-selector').classList.add('hidden');
             document.getElementById('lobby').classList.remove('hidden');
+            // Force l'activation de l'AudioContext lors d'une action utilisateur
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
         function toggleRules() { document.getElementById('rules-section').classList.toggle('hidden'); }
@@ -466,15 +474,13 @@
         }
 
         socket.on('des_resultat', (data) => {
-            playSound('dice'); // DECLENCHEMENT DU BRUIT DES DES
-            if(gameContextTurnOwner()) {
+            playSound('dice');
+            if(myTurn && !imEliminated) {
                 mouvementsDispo = data.total; desLances = true;
                 document.getElementById('mouvements-restants').innerText = mouvementsDispo;
                 document.getElementById('btn-des').disabled = true;
             }
         });
-
-        function gameContextTurnOwner() { return myTurn && !imEliminated; }
 
         function tenterDeplacement(nomPiece, targetGridX, targetGridY) {
             if(!myTurn || imEliminated) return;
@@ -513,7 +519,6 @@
         socket.on('admin_reveal_result', (data) => { document.getElementById('admin-reveal-result').innerHTML = `🕵️‍♂️ Solution : ${data.suspect} / ${data.arme} / ${data.lieu}`; });
         socket.on('you_are_revived', () => { imEliminated = false; myTurn = false; document.getElementById('turn-indicator').innerHTML = "⏳ Réintégré ! En attente."; });
 
-        // CONSTRUCTEUR DE CARTES STYLE JEU DE SOCIETE DYNAMIQUE
         socket.on('game_started', (data) => {
             document.getElementById('lobby').classList.add('hidden');
             document.getElementById('game-board').classList.remove('hidden');
@@ -551,8 +556,10 @@
 
         socket.on('timer_tick', (data) => {
             const timerBadge = document.getElementById('timer-display');
-            timerBadge.classList.remove('hidden'); timerBadge.innerText = data.left + "s";
-            timerBadge.style.background = data.left <= 10 ? "#e74c3c" : "#2c1a1a";
+            if (timerBadge) {
+                timerBadge.classList.remove('hidden'); timerBadge.innerText = data.left + "s";
+                timerBadge.style.background = data.left <= 10 ? "#e74c3c" : "#2c1a1a";
+            }
         });
 
         socket.on('turn_update', (data) => {
@@ -574,7 +581,6 @@
             }
         });
 
-        // FLASH DANGER ET BRUIT DE MORT / ÉLIMINATION
         socket.on('trigger_danger_alert', () => {
             playSound('danger');
             document.body.classList.add('flash-danger');
