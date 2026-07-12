@@ -14,100 +14,61 @@
             color: #e0d9d9; 
             margin: 10px; 
             padding: 0;
+            overflow-x: hidden;
+            transition: background-color 0.1s ease;
         }
         
-        /* ÉCRAN DE SÉLECTION APPAREIL */
-        .device-screen {
-            max-width: 500px;
-            margin: 60px auto;
-            text-align: center;
-        }
-        .device-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 20px;
-        }
-        .device-card {
-            background: rgba(40, 20, 20, 0.6);
-            border: 2px solid #3a2222;
-            border-radius: 10px;
-            padding: 15px 10px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 14px;
-        }
-        .device-card:hover, .device-card.active {
-            border-color: #e74c3c;
-            background: rgba(231, 76, 60, 0.15);
-            box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
-        }
-        .device-card span {
-            font-size: 30px;
-            display: block;
-            margin-bottom: 8px;
-        }
+        /* EFFET FLASH SCREEN */
+        .flash-danger { background-color: #7f0000 !important; }
 
-        .box { 
-            background: rgba(25, 15, 15, 0.85); 
-            backdrop-filter: blur(10px);
-            padding: 15px; 
-            border-radius: 12px; 
-            border: 1px solid rgba(231, 76, 60, 0.2); 
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        /* ÉCRAN SELECTION & LEADERBOARD */
+        .device-screen { max-width: 500px; margin: 40px auto; text-align: center; }
+        .device-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
+        .device-card { background: rgba(40, 20, 20, 0.6); border: 2px solid #3a2222; border-radius: 10px; padding: 15px 10px; cursor: pointer; transition: all 0.2s; font-size: 14px; }
+        .device-card:hover, .device-card.active { border-color: #e74c3c; background: rgba(231, 76, 60, 0.15); }
+        .device-card span { font-size: 30px; display: block; margin-bottom: 8px; }
+
+        /* DESIGN PREMIUM DU LEADERBOARD */
+        .leaderboard-box { background: rgba(15, 8, 8, 0.9); border: 1px solid #d35400; border-radius: 8px; margin-top: 20px; padding: 12px; text-align: left; }
+        .leaderboard-title { font-family: 'Cinzel', serif; color: #f39c12; font-size: 14px; margin-bottom: 8px; text-transform: uppercase; text-align: center; }
+        .leaderboard-item { display: flex; justify-content: space-between; padding: 5px 8px; border-bottom: 1px solid #2a1515; font-size: 13px; }
+        .leaderboard-item:last-child { border-bottom: none; }
+
+        /* STYLE DES CARTES IMMERSIFS TYPE JEU DE SOCIÉTÉ */
+        .cards-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .card-premium { 
+            position: relative; width: 105px; height: 145px; 
+            border-radius: 8px; border: 2px solid #fff; background: #111; 
+            box-shadow: 0 4px 10px #000; overflow: hidden; display: flex; 
+            flex-direction: column; justify-content: space-between; padding: 8px; 
+            box-sizing: border-box; text-align: center; transition: transform 0.2s;
         }
-        h1, h2, h3 { 
-            font-family: 'Cinzel', serif; 
-            color: #e74c3c; 
-            margin-top: 0; 
-            letter-spacing: 1px;
-            text-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
-        }
+        .card-premium:hover { transform: translateY(-5px) scale(1.03); }
+        .card-premium .card-type { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #bbb; }
+        .card-premium .card-icon { font-size: 26px; margin: 10px 0; }
+        .card-premium .card-title { font-size: 11px; font-weight: bold; line-height: 1.2; color: #fff; }
         
-        /* LE PLATEAU RESPONSIF DYNAMIQUE */
-        .board-container { 
-            position: relative; 
-            width: 100%; 
-            max-width: 600px; 
-            aspect-ratio: 1 / 1;
-            background: #150d0d; 
-            border: 3px solid #c0392b; 
-            border-radius: 10px; 
-            overflow: hidden; 
-            box-shadow: 0 0 25px rgba(192, 57, 43, 0.4); 
-            margin: 0 auto;
-        }
+        /* COULEURS DES THÈMES DE CARTES */
+        .card-suspect { border-color: #e74c3c; background: linear-gradient(135deg, #2c1111, #4c1c1c); }
+        .card-arme { border-color: #f1c40f; background: linear-gradient(135deg, #2d2508, #4a3b0a); }
+        .card-lieu { border-color: #3498db; background: linear-gradient(135deg, #0f1f2d, #18334a); }
+
+        .box { background: rgba(25, 15, 15, 0.85); backdrop-filter: blur(10px); padding: 15px; border-radius: 12px; border: 1px solid rgba(231, 76, 60, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
+        h1, h2, h3 { font-family: 'Cinzel', serif; color: #e74c3c; margin-top: 0; text-shadow: 0 0 10px rgba(231, 76, 60, 0.3); }
+        
+        .board-container { position: relative; width: 100%; max-width: 600px; aspect-ratio: 1 / 1; background: #150d0d; border: 3px solid #c0392b; border-radius: 10px; overflow: hidden; margin: 0 auto; }
         #board-img { width: 100%; height: 100%; object-fit: contain; opacity: 0.85; }
-        
-        .zone-piece { position: absolute; width: 33.33%; height: 33.33%; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: transparent; font-weight: bold; font-size: 13px; transition: all 0.3s ease; }
+        .zone-piece { position: absolute; width: 33.33%; height: 33.33%; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: transparent; font-weight: bold; font-size: 13px; }
         .zone-piece:hover { background: rgba(231, 76, 60, 0.15); border: 2px dashed rgba(231, 76, 60, 0.6); color: #fff; text-shadow: 0 0 8px #000; }
         
-        .pion { 
-            position: absolute; 
-            width: 22px; 
-            height: 22px; 
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
-            border: 2px solid #fff; 
-            box-shadow: -2px 2px 8px rgba(0,0,0,0.7); 
-            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); 
-            z-index: 10; 
-        }
-        .pion-label {
-            transform: rotate(45deg);
-            font-size: 9px;
-            font-weight: 700;
-            text-align: center;
-            line-height: 22px;
-            display: block;
-            text-shadow: 1px 1px 2px #000;
-        }
+        .pion { position: absolute; width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #fff; box-shadow: -2px 2px 8px rgba(0,0,0,0.7); transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 10; }
+        .pion-label { transform: rotate(45deg); font-size: 9px; font-weight: 700; text-align: center; line-height: 22px; display: block; text-shadow: 1px 1px 2px #000; }
 
         button { background: #e74c3c; color: #fff; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'Jost', sans-serif; transition: all 0.2s; width: 100%; margin-top: 5px; }
-        button:hover { background: #c0392b; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3); }
-        button:disabled { background: #2a1a1a !important; cursor: not-allowed; color: #555; box-shadow: none; transform: none; border: 1px solid #3a2222; }
+        button:hover { background: #c0392b; transform: translateY(-1px); }
+        button:disabled { background: #2a1a1a !important; cursor: not-allowed; color: #555; border: 1px solid #3a2222; }
         
-        select, input { padding: 9px; background: #120a0a; color: #fff; border: 1px solid #3a2222; border-radius: 6px; margin-bottom: 8px; width: 100%; box-sizing: border-box; font-family: 'Jost', sans-serif; }
+        select, input { padding: 9px; background: #120a0a; color: #fff; border: 1px solid #3a2222; border-radius: 6px; margin-bottom: 8px; width: 100%; box-sizing: border-box; }
         
         .log-box { height: 130px; overflow-y: auto; background: #080404; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 6px; border: 1px solid #2a1515; margin-bottom: 10px; }
         .chat-box { height: 130px; overflow-y: auto; background: #050805; padding: 10px; font-family: 'Jost', sans-serif; font-size: 13px; border-radius: 6px; border: 1px solid #152a15; margin-bottom: 5px; }
@@ -124,88 +85,51 @@
         .chat-input-container input { margin-bottom: 0; }
         .chat-input-container button { width: auto; margin-top: 0; background: #2ecc71; }
         .emoji-btn { background: #34495e; width: 40px; padding: 0; font-size: 18px; margin-top: 0; }
-        
-        .emoji-picker { 
-            position: absolute; bottom: 45px; right: 0; background: #151515; 
-            border: 1px solid #333; padding: 8px; display: grid; 
-            grid-template-columns: repeat(6, 1fr); gap: 5px; border-radius: 6px; 
-            z-index: 100; box-shadow: 0 4px 12px #000; max-height: 130px; overflow-y: auto;
-        }
+        .emoji-picker { position: absolute; bottom: 45px; right: 0; background: #151515; border: 1px solid #333; padding: 8px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; border-radius: 6px; z-index: 100; max-height: 130px; overflow-y: auto; }
         .emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 3px; }
 
-        .cards-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
-        .card { background: #2c1a1a; padding: 6px 12px; border-radius: 6px; border-left: 4px solid #e74c3c; font-weight: 600; font-size: 12px; }
-        
         .notebook table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .notebook th, .notebook td { border: 1px solid #3a2222; padding: 5px; }
         .notebook tr.checked-line { background: rgba(0, 0, 0, 0.5) !important; color: #555; text-decoration: line-through; }
-        
         .intel-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; margin-top: 5px; }
         .intel-table th, .intel-table td { border: 1px solid #3a2222; padding: 4px; }
 
         .hidden { display: none !important; }
         .de-box { background: #2c1a1a; padding: 10px; border-radius: 8px; text-align: center; font-size: 18px; margin-bottom: 10px; border: 1px solid #c0392b; font-family: 'Cinzel', serif; }
         .code-display { font-size: 24px; color: #2ecc71; font-weight: bold; letter-spacing: 4px; background: #000; padding: 5px; border-radius: 6px; margin: 10px 0; font-family: monospace; }
-
         .rules-btn { background: #34495e; margin-bottom: 10px; font-size: 13px; }
         .admin-btn { background: #d35400; margin-bottom: 10px; font-size: 13px; }
         .rules-content { background: #0c0606; padding: 10px; border-radius: 6px; border: 1px solid #3a2222; font-size: 12px; max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
         .timer-badge { background: #c0392b; color: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 14px; margin-left: 8px; }
 
-        /* STRUCTURE PAR DÉFAUT (SERA MODIFIÉE PAR LE SCRIPT SELON LE CHOIX) */
-        .container { 
-            max-width: 1600px; 
-            margin: 0 auto; 
-            display: grid; 
-            grid-template-columns: 1fr; 
-            gap: 15px; 
-        }
-
-        /* 💻 CONFIGURATION PC */
-        .mode-pc {
-            grid-template-columns: 550px 1fr 350px !important;
-        }
-
-        /* 📱 CONFIGURATION TÉLÉPHONE (TOUT EN VERTICAL, PLUS COMPACT) */
-        .mode-phone {
-            grid-template-columns: 1fr !important;
-        }
-        .mode-phone .board-container {
-            max-width: 340px !important; /* Petit plateau adapté aux écrans verticaux */
-        }
-        .mode-phone .notebook table {
-            font-size: 11px !important;
-        }
-
-        /* 📁 CONFIGURATION TABLETTE (DEUX COLONNES INTERMÉDIAIRES) */
-        .mode-tablet {
-            grid-template-columns: 1fr 1fr !important;
-        }
-        .mode-tablet .notebook {
-            grid-column: span 2; /* Carnet prend toute la largeur en bas */
-        }
+        .container { max-width: 1600px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .mode-pc { grid-template-columns: 550px 1fr 350px !important; }
+        .mode-phone { grid-template-columns: 1fr !important; }
+        .mode-phone .board-container { max-width: 340px !important; }
+        .mode-phone .notebook table { font-size: 11px !important; }
+        .mode-tablet { grid-template-columns: 1fr 1fr !important; }
+        .mode-tablet .notebook { grid-column: span 2; }
     </style>
 </head>
 <body>
 
     <div id="device-selector" class="box device-screen">
         <h1>📱 Choisissez votre Appareil</h1>
-        <p style="color:#bbb;">Adaptez l'affichage de l'interface pour une meilleure expérience de jeu :</p>
+        <p style="color:#bbb;">Adaptez l'interface pour votre écran :</p>
         <div class="device-grid">
-            <div class="device-card" onclick="setDeviceMode('phone')">
-                <span>📱</span>
-                <b>Téléphone</b>
-            </div>
-            <div class="device-card" onclick="setDeviceMode('tablet')">
-                <span>平板</span>
-                <b>Tablette</b>
-            </div>
-            <div class="device-card active" onclick="setDeviceMode('pc')">
-                <span>💻</span>
-                <b>Ordinateur</b>
+            <div class="device-card" onclick="setDeviceMode('phone')"><span>📱</span><b>Téléphone</b></div>
+            <div class="device-card" onclick="setDeviceMode('tablet')"><span>平板</span><b>Tablette</b></div>
+            <div class="device-card active" onclick="setDeviceMode('pc')"><span>💻</span><b>Ordinateur</b></div>
+        </div>
+        
+        <div class="leaderboard-box">
+            <div class="leaderboard-title">🏆 Top 5 Détectives (Leaderboard)</div>
+            <div id="leaderboard-rows">
+                <p style="color:#666; font-size:12px; text-align:center; margin:5px 0;">Chargement des données...</p>
             </div>
         </div>
-        <button onclick="confirmDevice()" style="margin-top: 25px; background: #2ecc71; font-size: 16px;">Valider et Entrer au Salon 🚀</button>
+
+        <button onclick="confirmDevice()" style="margin-top: 15px; background: #2ecc71; font-size: 16px;">Valider et Entrer au Salon 🚀</button>
     </div>
 
     <div id="lobby" class="box hidden" style="max-width: 420px; margin: 30px auto; text-align: center;">
@@ -284,7 +208,6 @@
             <div class="box" style="flex-grow:1; display: flex; flex-direction: column; gap: 5px;">
                 <h3>📜 Événements</h3>
                 <div id="logs" class="log-box"></div>
-                
                 <h3>💬 Tchat Général</h3>
                 <div id="chats" class="chat-box"></div>
                 
@@ -323,9 +246,7 @@
             <div style="max-height: 100px; overflow-y: auto; margin-bottom: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 5px;">
                 <table class="intel-table">
                     <thead><tr><th>Qui</th><th>Piste</th><th>Réponse</th></tr></thead>
-                    <tbody id="intel-rows">
-                        <tr><td colspan="3" style="color:#666; text-align:center;">Vide</td></tr>
-                    </tbody>
+                    <tbody id="intel-rows"><tr><td colspan="3" style="color:#666; text-align:center;">Vide</td></tr></tbody>
                 </table>
             </div>
 
@@ -376,7 +297,7 @@
         let mouvementsDispo = 0;
         let currentGridX = 2; 
         let currentGridY = 2;
-        let selectedDevice = 'pc'; // Par défaut
+        let selectedDevice = 'pc';
 
         const coordsPieces = {
             "Salon": {x: 16, y: 16}, "Véranda": {x: 50, y: 16}, "Salle de Bal": {x: 83, y: 16},
@@ -386,38 +307,95 @@
         const couleurs = ["#e74c3c", "#f1c40f", "#3498db", "#2ecc71", "#e67e22", "#9b59b6"];
         const EMOJIS_LIST = ["😀","😂","🤣","😊","😍","🤔","🤫","👀","🕵️‍♂️","🔍","🩸","🔪","🔫","🚪","🏰","🎲","🚨","😱","☠️","🏆","🍿","🍺","🔥"];
 
-        // FONCTION SYSTÈME DE SELECTION DE L'APPAREIL
+        // BASE DE DONNÉES DE CORRESPONDANCES POUR DESSINER LES CARTES JEU DE SOCIÉTÉ
+        const CARD_DATA = {
+            "Mlle Rose": { type: "suspect", icon: "🔴" }, "Colonel Moutarde": { type: "suspect", icon: "🟡" },
+            "Mme Pervenche": { type: "suspect", icon: "🔵" }, "Docteur Olive": { type: "suspect", icon: "🟢" },
+            "Mme Leblanc": { type: "suspect", icon: "⚪" }, "Professeur Violet": { type: "suspect", icon: "🟣" },
+            "Chandelier": { type: "arme", icon: "🕯️" }, "Couteau": { type: "arme", icon: "🔪" },
+            "Revolver": { type: "arme", icon: "🔫" }, "Corde": { type: "arme", icon: "🪢" },
+            "Matraque": { type: "arme", icon: "🪵" }, "Clé Anglaise": { type: "arme", icon: "🔧" },
+            "Salon": { type: "lieu", icon: "🛋️" }, "Véranda": { type: "lieu", icon: "🪴" },
+            "Salle de Bal": { type: "lieu", icon: "💃" }, "Salle à Manger": { type: "lieu", icon: "🍷" },
+            "Cuisine": { type: "lieu", icon: "🍳" }, "Bibliothèque": { type: "lieu", icon: "📚" },
+            "Billard": { type: "lieu", icon: "🎱" }, "Bureau": { type: "lieu", icon: "🖥️" }, "Hall": { type: "lieu", icon: "🚪" }
+        };
+
+        // AUDIO GENERATOR NATIF (PAS BESOIN DE FICHIERS MP3 EXTERNES !)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            try {
+                if (type === 'dice') {
+                    // Bruit blanc court pour simuler le roulement des dés
+                    let bufferSize = audioCtx.sampleRate * 0.15,
+                        buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate),
+                        data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    let noise = audioCtx.createBufferSource(); noise.buffer = buffer;
+                    let filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400;
+                    noise.connect(filter); filter.connect(audioCtx.destination); noise.start();
+                } else if (type === 'danger') {
+                    // Alerte sirène d'élimination aigu-grave
+                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.4);
+                    osc.connect(gain); gain.connect(audioCtx.destination); gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+                } else if (type === 'win') {
+                    // Petite mélodie victorieuse joyeuse
+                    [440, 554, 659, 880].forEach((f, i) => {
+                        let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                        osc.frequency.value = f; osc.connect(gain); gain.connect(audioCtx.destination);
+                        gain.gain.setValueAtTime(0.1, audioCtx.currentTime + i*0.1);
+                        osc.start(audioCtx.currentTime + i * 0.1); osc.stop(audioCtx.currentTime + i * 0.1 + 0.15);
+                    });
+                }
+            } catch(e){}
+        }
+
+        // AU CHARGEMENT DE LA PAGE, ON DEMANDE LE CLASSEMENT
+        window.onload = function() {
+            socket.emit('get_leaderboard');
+        };
+
+        socket.on('leaderboard_data', (data) => {
+            const box = document.getElementById('leaderboard-rows');
+            if(!data.top || data.top.length === 0) {
+                box.innerHTML = `<p style="color:#666; font-size:12px; text-align:center; margin:5px 0;">Aucune victoire pour le moment.</p>`;
+                return;
+            }
+            box.innerHTML = data.top.map((item, index) => `
+                <div class="leaderboard-item">
+                    <span>${index === 0 ? '👑' : (index+1) + '.'} <b>${item[0]}</b></span>
+                    <span style="color:#f39c12; font-weight:bold;">${item[1]} ${item[1] > 1 ? 'victoires' : 'victoire'}</span>
+                </div>
+            `).join('');
+        });
+
         function setDeviceMode(mode) {
             selectedDevice = mode;
             document.querySelectorAll('.device-card').forEach(el => el.classList.remove('active'));
-            // Petit hack visuel pour cibler l'élément cliqué
             event.currentTarget.classList.add('active');
         }
 
         function confirmDevice() {
-            // Applique la bonne classe CSS sur la grille principale du jeu
             const container = document.getElementById('game-board');
             container.classList.remove('mode-pc', 'mode-phone', 'mode-tablet');
             container.classList.add('mode-' + selectedDevice);
-
-            // Cache l'écran de sélection et affiche le lobby principal
             document.getElementById('device-selector').classList.add('hidden');
             document.getElementById('lobby').classList.remove('hidden');
         }
 
         function toggleRules() { document.getElementById('rules-section').classList.toggle('hidden'); }
         function toggleAdmin() { document.getElementById('admin-section').classList.toggle('hidden'); }
-        
         function initEmojiPicker() {
             const picker = document.getElementById('picker');
             picker.innerHTML = EMOJIS_LIST.map(em => `<div class="emoji-item" onclick="insertEmoji('${em}')">${em}</div>`).join('');
         }
         function toggleEmojiPicker() { document.getElementById('picker').classList.toggle('hidden'); }
         function insertEmoji(em) {
-            const input = document.getElementById('chat-msg');
-            input.value += em;
-            document.getElementById('picker').classList.add('hidden');
-            input.focus();
+            const input = document.getElementById('chat-msg'); input.value += em;
+            document.getElementById('picker').classList.add('hidden'); input.focus();
         }
 
         function syncRowStyle(name) {
@@ -431,18 +409,12 @@
 
         function autoCocherCarte(nomCarte) {
             const box = document.getElementById(`check-${nomCarte}`);
-            if(box) {
-                box.checked = true;
-                syncRowStyle(nomCarte);
-            }
+            if(box) { box.checked = true; syncRowStyle(nomCarte); }
         }
 
         function checkAdminAccess() {
-            if (monNom === "Bedy") {
-                document.getElementById('admin-panel-toggle').classList.remove('hidden');
-            } else {
-                document.getElementById('admin-panel-toggle').classList.add('hidden');
-            }
+            if (monNom === "Bedy") document.getElementById('admin-panel-toggle').classList.remove('hidden');
+            else document.getElementById('admin-panel-toggle').classList.add('hidden');
         }
 
         function createRoom() {
@@ -455,7 +427,7 @@
         function joinRoomByCode() {
             const name = document.getElementById('username').value.trim();
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if(!name || !code) return alert("Remplis ton pseudo et le code de partie !");
+            if(!name || !code) return alert("Remplis ton pseudo et le code !");
             monNom = name; checkAdminAccess(); initEmojiPicker();
             socket.emit('join_game', { username: name, room: code });
         }
@@ -463,7 +435,7 @@
         function joinInGameByCode() {
             const name = document.getElementById('username').value.trim();
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if(!name || !code) return alert("Remplis ton pseudo et le code de partie !");
+            if(!name || !code) return alert("Remplis les champs !");
             monNom = name; checkAdminAccess(); initEmojiPicker();
             socket.emit('join_in_game', { username: name, room: code });
         }
@@ -483,13 +455,9 @@
         });
 
         function sendStartGame() { socket.emit('start_game', { room: currentRoom }); }
-
         function sendChatMessage() {
-            const input = document.getElementById('chat-msg');
-            const msg = input.value.trim();
-            if(!msg) return;
-            socket.emit('send_chat_msg', { room: currentRoom, msg: msg });
-            input.value = "";
+            const input = document.getElementById('chat-msg'); const msg = input.value.trim(); if(!msg) return;
+            socket.emit('send_chat_msg', { room: currentRoom, msg: msg }); input.value = "";
         }
 
         function lancerLesDes() {
@@ -498,15 +466,19 @@
         }
 
         socket.on('des_resultat', (data) => {
-            mouvementsDispo = data.total;
-            desLances = true;
-            document.getElementById('mouvements-restants').innerText = mouvementsDispo;
-            document.getElementById('btn-des').disabled = true;
+            playSound('dice'); // DECLENCHEMENT DU BRUIT DES DES
+            if(gameContextTurnOwner()) {
+                mouvementsDispo = data.total; desLances = true;
+                document.getElementById('mouvements-restants').innerText = mouvementsDispo;
+                document.getElementById('btn-des').disabled = true;
+            }
         });
+
+        function gameContextTurnOwner() { return myTurn && !imEliminated; }
 
         function tenterDeplacement(nomPiece, targetGridX, targetGridY) {
             if(!myTurn || imEliminated) return;
-            if(!desLances) return alert("🎲 Clique d'abord sur LANCER LES DÉS !");
+            if(!desLances) return alert("🎲 Lance d'abord les dés !");
             let distance = (Math.abs(targetGridX - currentGridX) + Math.abs(targetGridY - currentGridY)) * 3;
             if (distance === 0) return; 
 
@@ -518,74 +490,59 @@
                 document.getElementById('select-lieu').value = nomPiece;
                 socket.emit('player_move', { room: currentRoom, piece: nomPiece });
             } else {
-                alert(`Mouvement impossible (${distance} requis, restant : ${mouvementsDispo}).`);
+                alert(`Mouvement impossible (${distance} cases requises).`);
             }
         }
 
         function validerAction(type) {
             if(!myTurn || imEliminated) return;
             const data = {
-                room: currentRoom,
-                suspect: document.getElementById('select-suspect').value,
-                arme: document.getElementById('select-arme').value,
-                lieu: maPosition
+                room: currentRoom, suspect: document.getElementById('select-suspect').value,
+                arme: document.getElementById('select-arme').value, lieu: maPosition
             };
             socket.emit(type === 'hypothese' ? 'action_hypothese' : 'action_accusation', data);
         }
 
-        // Admin actions
-        function adminRevive() {
-            if (monNom !== "Bedy") return;
-            socket.emit('admin_revive_player', { room: currentRoom, target_name: document.getElementById('admin-target-name').value.trim() });
-        }
-        function adminKill() {
-            if (monNom !== "Bedy") return;
-            socket.emit('admin_kill_player', { room: currentRoom, target_name: document.getElementById('admin-target-name').value.trim() });
-        }
-        function adminForceDice() {
-            if (monNom !== "Bedy") return;
-            const val = parseInt(document.getElementById('admin-dice-val').value);
-            if(isNaN(val) || val < 1 || val > 12) return alert("Chiffre entre 1 et 12.");
-            socket.emit('admin_force_dice', { room: currentRoom, value: val });
-        }
+        function adminRevive() { if (monNom === "Bedy") socket.emit('admin_revive_player', { room: currentRoom, target_name: document.getElementById('admin-target-name').value.trim() }); }
+        function adminKill() { if (monNom === "Bedy") socket.emit('admin_kill_player', { room: currentRoom, target_name: document.getElementById('admin-target-name').value.trim() }); }
+        function adminForceDice() { if (monNom === "Bedy") { const val = parseInt(document.getElementById('admin-dice-val').value); socket.emit('admin_force_dice', { room: currentRoom, value: val }); } }
         function adminReveal() { if (monNom === "Bedy") socket.emit('admin_reveal_solution', { room: currentRoom }); }
         function adminSkipTurn() { if (monNom === "Bedy") socket.emit('admin_skip_turn', { room: currentRoom }); }
         function adminResetGame() { if (monNom === "Bedy") socket.emit('admin_reset_game', { room: currentRoom }); }
 
-        socket.on('admin_reveal_result', (data) => {
-            document.getElementById('admin-reveal-result').innerHTML = `🕵️‍♂️ Crime : ${data.suspect} + ${data.arme} + ${data.lieu}`;
-        });
+        socket.on('admin_reveal_result', (data) => { document.getElementById('admin-reveal-result').innerHTML = `🕵️‍♂️ Solution : ${data.suspect} / ${data.arme} / ${data.lieu}`; });
+        socket.on('you_are_revived', () => { imEliminated = false; myTurn = false; document.getElementById('turn-indicator').innerHTML = "⏳ Réintégré ! En attente."; });
 
-        socket.on('you_are_revived', () => {
-            imEliminated = false; myTurn = false;
-            document.getElementById('turn-indicator').innerHTML = "⏳ Réintégré ! En attente de ton tour.";
-        });
-
+        // CONSTRUCTEUR DE CARTES STYLE JEU DE SOCIETE DYNAMIQUE
         socket.on('game_started', (data) => {
             document.getElementById('lobby').classList.add('hidden');
             document.getElementById('game-board').classList.remove('hidden');
-            document.getElementById('my-cards').innerHTML = data.cards.map(c => `<div class="card">${c}</div>`).join('');
+            
+            const cardsContainer = document.getElementById('my-cards');
+            cardsContainer.innerHTML = data.cards.map(carte => {
+                let metadata = CARD_DATA[carte] || { type: "lieu", icon: "🃏" };
+                return `
+                    <div class="card-premium card-${metadata.type}">
+                        <div class="card-type">${metadata.type}</div>
+                        <div class="card-icon">${metadata.icon}</div>
+                        <div class="card-title">${carte}</div>
+                    </div>
+                `;
+            }).join('');
             
             data.cards.forEach(carte => { autoCocherCarte(carte); });
-
             currentGridX = 2; currentGridY = 2; maPosition = "Hall";
             document.getElementById('pos-indicator').innerHTML = `📍 Position : <b>${maPosition}</b>`;
-            document.getElementById('select-lieu').value = "Hall";
             if(!data.is_rejoin) socket.emit('player_move', { room: currentRoom, piece: 'Hall' });
             checkAdminAccess();
         });
 
-        socket.on('pion_update', (data) => {
-            localPlayerPositions[data.sid] = { name: data.name, piece: data.piece };
-            renderPions();
-        });
+        socket.on('pion_update', (data) => { localPlayerPositions[data.sid] = { name: data.name, piece: data.piece }; renderPions(); });
 
         function renderPions() {
-            const layer = document.getElementById('pions-layer'); layer.innerHTML = "";
-            let idx = 0;
+            const layer = document.getElementById('pions-layer'); layer.innerHTML = ""; let idx = 0;
             for (let sid in localPlayerPositions) {
-                let p = localPlayerPositions[sid];
-                let base = coordsPieces[p.piece] || {x:83, y:83};
+                let p = localPlayerPositions[sid]; let base = coordsPieces[p.piece] || {x:83, y:83};
                 let offset = idx * 4; let c = couleurs[idx % 6];
                 layer.innerHTML += `<div class="pion" style="top: calc(${base.y}% + ${offset}px - 11px); left: calc(${base.x}% + ${offset}px - 11px); background:${c};" title="${p.name}"><span class="pion-label">${p.name.substring(0,2).toUpperCase()}</span></div>`;
                 idx++;
@@ -617,6 +574,13 @@
             }
         });
 
+        // FLASH DANGER ET BRUIT DE MORT / ÉLIMINATION
+        socket.on('trigger_danger_alert', () => {
+            playSound('danger');
+            document.body.classList.add('flash-danger');
+            setTimeout(() => document.body.classList.remove('flash-danger'), 400);
+        });
+
         socket.on('player_eliminated', () => {
             imEliminated = true; myTurn = false;
             document.getElementById('turn-indicator').innerHTML = "❌ ÉLIMINÉ !";
@@ -632,24 +596,23 @@
         });
 
         socket.on('notebook_auto_update', (data) => {
-            const tbody = document.getElementById('intel-rows');
-            if(tbody.innerHTML.includes("Vide")) tbody.innerHTML = "";
+            const tbody = document.getElementById('intel-rows'); if(tbody.innerHTML.includes("Vide")) tbody.innerHTML = "";
             tbody.innerHTML += `<tr><td style="color:#3498db; font-weight:bold;">${data.demandeur}</td><td><i>${data.suspect} / ${data.arme}</i></td><td style="color:#2ecc71;">${data.repondeur}</td></tr>`;
         });
         
         socket.on('log', (data) => { 
             if(data.type === 'chat') {
-                const cBox = document.getElementById('chats');
-                cBox.innerHTML += `<div class="chat-item">${data.msg}</div>`;
-                cBox.scrollTop = cBox.scrollHeight;
+                const cBox = document.getElementById('chats'); cBox.innerHTML += `<div class="chat-item">${data.msg}</div>`; cBox.scrollTop = cBox.scrollHeight;
             } else {
-                const lBox = document.getElementById('logs');
-                lBox.innerHTML += `<div class="log-item log-${data.type}">${data.msg}</div>`;
-                lBox.scrollTop = lBox.scrollHeight;
+                const lBox = document.getElementById('logs'); lBox.innerHTML += `<div class="log-item log-${data.type}">${data.msg}</div>`; lBox.scrollTop = lBox.scrollHeight;
             }
         });
 
-        socket.on('game_over', (data) => { alert(data.msg); });
+        socket.on('game_over_event', (data) => { 
+            if(data.status === 'win') playSound('win');
+            else playSound('danger');
+            alert(data.msg); 
+        });
         socket.on('error', (data) => alert(data.msg));
         socket.on('forced_reset', () => { location.reload(); });
     </script>
