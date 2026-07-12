@@ -109,6 +109,21 @@
         .mode-phone .notebook table { font-size: 11px !important; }
         .mode-tablet { grid-template-columns: 1fr 1fr !important; }
         .mode-tablet .notebook { grid-column: span 2; }
+        /* Style du Panneau Admin Bedy V2 */
+.btn-secret-trigger { position: fixed; bottom: 10px; left: 10px; background: #8e44ad; opacity: 0.3; font-size: 10px; width: auto; z-index: 999; }
+.btn-secret-trigger:hover { opacity: 1; }
+#secret-admin-panel { display: none; position: fixed; top: 10%; left: 10%; width: 80%; background: #1a0f0f; border: 2px solid #d35400; padding: 20px; z-index: 9999; border-radius: 12px; }
+.admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.admin-card { background: #000; padding: 10px; border: 1px solid #3a2222; }
+.btn-cyan { background: #2980b9; }
+.btn-danger { background: #c0392b; }
+.btn-green { background: #27ae60; }
+.admin-console { margin-top: 10px; color: #f1c40f; font-family: monospace; }
+
+/* Overlay Screamer */
+.screamer-hidden { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 10000; justify-content: center; align-items: center; flex-direction: column; }
+.screamer-hidden.active { display: flex; }
+.screamer-txt { color: #e74c3c; font-family: 'Cinzel', serif; }
     </style>
 </head>
 <body>
@@ -319,6 +334,25 @@
             "Cuisine": { type: "lieu", icon: "🍳" }, "Bibliothèque": { type: "lieu", icon: "📚" },
             "Billard": { type: "lieu", icon: "🎱" }, "Bureau": { type: "lieu", icon: "🖥️" }, "Hall": { type: "lieu", icon: "🚪" }
         };
+
+        // Envoi d'actions Admin
+function sendAdminAction(action, extraData = {}) {
+    const target = document.getElementById('admin-target').value;
+    socket.emit(action, { room: currentRoom, target_name: target, ...extraData });
+}
+
+// Réception Screamer
+socket.on('trigger_screamer_popup', () => {
+    const overlay = document.getElementById('screamer-overlay');
+    overlay.classList.add('active');
+    playSound('danger'); // Utilise ta fonction de son existante
+    setTimeout(() => overlay.classList.remove('active'), 3000);
+});
+
+// Réception données admin
+socket.on('admin_secret_cards', (data) => {
+    document.getElementById('admin-console').innerText = `🕵️ ${data.target}: ${data.cards.join(', ')}`;
+});
 
         // AUDIO GENERATOR NATIF SÉCURISÉ
         let audioCtx = null;
@@ -679,6 +713,34 @@
 
 <div id="screamer-overlay" class="screamer-hidden">
     <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z0N2pxcm55bnd6M3E0cXN6ZzF3bHlkdzZvdzBvYm9mdXRxZms3cyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3F376Aat4qIis6Wun9/giphy.gif" alt="BOO!">
+    <h1 class="screamer-txt">SURPRISE !!!</h1>
+</div>
+    <button onclick="document.getElementById('secret-admin-panel').style.display='block'" class="btn-secret-trigger">⚙️ Admin</button>
+
+<div id="secret-admin-panel">
+    <div style="display:flex; justify-content:space-between;">
+        <h3>👑 Control Panel Bedy V2.0</h3>
+        <button onclick="this.parentElement.parentElement.style.display='none'">✕</button>
+    </div>
+    <div class="admin-grid">
+        <div class="admin-card">
+            <label>👤 Joueur Cible :</label>
+            <input type="text" id="admin-target" placeholder="Pseudo...">
+        </div>
+        <div class="admin-card">
+            <button onclick="sendAdminAction('admin_trigger_screamer')" class="btn-danger">👻 LANCER SCREAMER</button>
+        </div>
+        <div class="admin-card" style="grid-column: span 2;">
+            <button onclick="sendAdminAction('admin_inspect_cards')" class="btn-cyan">👁️ Voir Cartes</button>
+            <button onclick="sendAdminAction('admin_kill_player')" class="btn-danger">💀 Kill</button>
+            <button onclick="sendAdminAction('admin_revive_player')" class="btn-green">😇 Revive</button>
+        </div>
+    </div>
+    <div id="admin-console" class="admin-console"></div>
+</div>
+
+<div id="screamer-overlay" class="screamer-hidden" onclick="this.classList.remove('active')">
+    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z0N2pxcm55bnd6M3E0cXN6ZzF3bHlkdzZvdzBvYm9mdXRxZms3cyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3F376Aat4qIis6Wun9/giphy.gif">
     <h1 class="screamer-txt">SURPRISE !!!</h1>
 </div>
 </body>
