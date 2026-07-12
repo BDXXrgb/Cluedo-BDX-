@@ -482,18 +482,3 @@ def handle_disconnect():
             break
 
 if __name__ == '__main__':
-    
-    # Ajoute ceci dans ton fichier Python
-@socketio.on('admin_inspect_cards')
-def handle_inspect_cards(data):
-    # 'data' doit contenir le nom du joueur dans 'target'
-    target_name = data.get('target')
-    
-    # Remplace 'game_state' par ta variable qui contient les infos des joueurs
-    if target_name in game_state:
-        cards = game_state[target_name]['cards']
-        # On envoie la liste des cartes au client qui a demandé
-        emit('admin_show_cards', {'target': target_name, 'cards': cards})
-    else:
-        emit('log', {'msg': f"Joueur {target_name} introuvable."})
-    socketio.run(app, debug=True)
