@@ -6,742 +6,80 @@
     <title>Cluedo Premium - Enquête Privée</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
+        /* [Tes styles CSS existants + les nouveaux éléments Admin] */
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght=500;700&family=Jost:wght=300;400;600&display=swap');
-        
-        body { 
-            font-family: 'Jost', sans-serif; 
-            background: radial-gradient(circle at center, #1a0f0f 0%, #0a0505 100%); 
-            color: #e0d9d9; 
-            margin: 10px; 
-            padding: 0;
-            overflow-x: hidden;
-            transition: background-color 0.1s ease;
-        }
-        
-        /* EFFET FLASH SCREEN */
-        .flash-danger { background-color: #7f0000 !important; }
-
-        /* ÉCRAN SELECTION & LEADERBOARD */
-        .device-screen { max-width: 500px; margin: 40px auto; text-align: center; }
-        .device-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
-        .device-card { background: rgba(40, 20, 20, 0.6); border: 2px solid #3a2222; border-radius: 10px; padding: 15px 10px; cursor: pointer; transition: all 0.2s; font-size: 14px; }
-        .device-card:hover, .device-card.active { border-color: #e74c3c; background: rgba(231, 76, 60, 0.15); }
-        .device-card span { font-size: 30px; display: block; margin-bottom: 8px; }
-
-        /* DESIGN PREMIUM DU LEADERBOARD */
-        .leaderboard-box { background: rgba(15, 8, 8, 0.9); border: 1px solid #d35400; border-radius: 8px; margin-top: 20px; padding: 12px; text-align: left; }
-        .leaderboard-title { font-family: 'Cinzel', serif; color: #f39c12; font-size: 14px; margin-bottom: 8px; text-transform: uppercase; text-align: center; }
-        .leaderboard-item { display: flex; justify-content: space-between; padding: 5px 8px; border-bottom: 1px solid #2a1515; font-size: 13px; }
-        .leaderboard-item:last-child { border-bottom: none; }
-
-        /* STYLE DES CARTES IMMERSIFS TYPE JEU DE SOCIÉTÉ */
-        .cards-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-        .card-premium { 
-            position: relative; width: 105px; height: 145px; 
-            border-radius: 8px; border: 2px solid #fff; background: #111; 
-            box-shadow: 0 4px 10px #000; overflow: hidden; display: flex; 
-            flex-direction: column; justify-content: space-between; padding: 8px; 
-            box-sizing: border-box; text-align: center; transition: transform 0.2s;
-        }
-        .card-premium:hover { transform: translateY(-5px) scale(1.03); }
-        .card-premium .card-type { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #bbb; }
-        .card-premium .card-icon { font-size: 26px; margin: 10px 0; }
-        .card-premium .card-title { font-size: 11px; font-weight: bold; line-height: 1.2; color: #fff; }
-        
-        /* COULEURS DES THÈMES DE CARTES */
-        .card-suspect { border-color: #e74c3c; background: linear-gradient(135deg, #2c1111, #4c1c1c); }
-        .card-arme { border-color: #f1c40f; background: linear-gradient(135deg, #2d2508, #4a3b0a); }
-        .card-lieu { border-color: #3498db; background: linear-gradient(135deg, #0f1f2d, #18334a); }
-
-        .box { background: rgba(25, 15, 15, 0.85); backdrop-filter: blur(10px); padding: 15px; border-radius: 12px; border: 1px solid rgba(231, 76, 60, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); }
-        h1, h2, h3 { font-family: 'Cinzel', serif; color: #e74c3c; margin-top: 0; text-shadow: 0 0 10px rgba(231, 76, 60, 0.3); }
-        
-        .board-container { position: relative; width: 100%; max-width: 600px; aspect-ratio: 1 / 1; background: #150d0d; border: 3px solid #c0392b; border-radius: 10px; overflow: hidden; margin: 0 auto; }
-        #board-img { width: 100%; height: 100%; object-fit: contain; opacity: 0.85; }
-        .zone-piece { position: absolute; width: 33.33%; height: 33.33%; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: transparent; font-weight: bold; font-size: 13px; }
-        .zone-piece:hover { background: rgba(231, 76, 60, 0.15); border: 2px dashed rgba(231, 76, 60, 0.6); color: #fff; text-shadow: 0 0 8px #000; }
-        
-        .pion { position: absolute; width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #fff; box-shadow: -2px 2px 8px rgba(0,0,0,0.7); transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 10; }
-        .pion-label { transform: rotate(45deg); font-size: 9px; font-weight: 700; text-align: center; line-height: 22px; display: block; text-shadow: 1px 1px 2px #000; }
-
-        button { background: #e74c3c; color: #fff; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'Jost', sans-serif; transition: all 0.2s; width: 100%; margin-top: 5px; }
-        button:hover { background: #c0392b; transform: translateY(-1px); }
-        button:disabled { background: #2a1a1a !important; cursor: not-allowed; color: #555; border: 1px solid #3a2222; }
-        
-        select, input { padding: 9px; background: #120a0a; color: #fff; border: 1px solid #3a2222; border-radius: 6px; margin-bottom: 8px; width: 100%; box-sizing: border-box; }
-        
-        .log-box { height: 130px; overflow-y: auto; background: #080404; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 6px; border: 1px solid #2a1515; margin-bottom: 10px; }
-        .chat-box { height: 130px; overflow-y: auto; background: #050805; padding: 10px; font-family: 'Jost', sans-serif; font-size: 13px; border-radius: 6px; border: 1px solid #152a15; margin-bottom: 5px; }
-        
-        .log-item { margin-bottom: 5px; padding: 3px 6px; border-radius: 4px; border-left: 3px solid #777; }
-        .log-system { border-left-color: #3498db; color: #75bfff; }
-        .log-hypothese { border-left-color: #f1c40f; color: #f5d76e; }
-        .log-elimination { border-left-color: #e74c3c; color: #ff7675; font-weight: bold; }
-        .log-admin { border-left-color: #e67e22; color: #ffb476; }
-        .chat-item { margin-bottom: 4px; color: #b2bec3; }
-
-        .chat-wrapper { position: relative; }
-        .chat-input-container { display: flex; gap: 5px; }
-        .chat-input-container input { margin-bottom: 0; }
-        .chat-input-container button { width: auto; margin-top: 0; background: #2ecc71; }
-        .emoji-btn { background: #34495e; width: 40px; padding: 0; font-size: 18px; margin-top: 0; }
-        .emoji-picker { position: absolute; bottom: 45px; right: 0; background: #151515; border: 1px solid #333; padding: 8px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; border-radius: 6px; z-index: 100; max-height: 130px; overflow-y: auto; }
-        .emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 3px; }
-
-        .notebook table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .notebook th, .notebook td { border: 1px solid #3a2222; padding: 5px; }
-        .notebook tr.checked-line { background: rgba(0, 0, 0, 0.5) !important; color: #555; text-decoration: line-through; }
-        .intel-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; margin-top: 5px; }
-        .intel-table th, .intel-table td { border: 1px solid #3a2222; padding: 4px; }
-
+        body { font-family: 'Jost', sans-serif; background: #0a0505; color: #e0d9d9; margin: 10px; }
+        .box { background: rgba(25, 15, 15, 0.85); padding: 15px; border-radius: 12px; border: 1px solid rgba(231, 76, 60, 0.2); }
         .hidden { display: none !important; }
-        .de-box { background: #2c1a1a; padding: 10px; border-radius: 8px; text-align: center; font-size: 18px; margin-bottom: 10px; border: 1px solid #c0392b; font-family: 'Cinzel', serif; }
-        .code-display { font-size: 24px; color: #2ecc71; font-weight: bold; letter-spacing: 4px; background: #000; padding: 5px; border-radius: 6px; margin: 10px 0; font-family: monospace; }
-        .rules-btn { background: #34495e; margin-bottom: 10px; font-size: 13px; }
-        .admin-btn { background: #d35400; margin-bottom: 10px; font-size: 13px; }
-        .rules-content { background: #0c0606; padding: 10px; border-radius: 6px; border: 1px solid #3a2222; font-size: 12px; max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
-        .timer-badge { background: #c0392b; color: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 14px; margin-left: 8px; }
-
-        .container { max-width: 1600px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 15px; }
-        .mode-pc { grid-template-columns: 550px 1fr 350px !important; }
-        .mode-phone { grid-template-columns: 1fr !important; }
-        .mode-phone .board-container { max-width: 340px !important; }
-        .mode-phone .notebook table { font-size: 11px !important; }
-        .mode-tablet { grid-template-columns: 1fr 1fr !important; }
-        .mode-tablet .notebook { grid-column: span 2; }
-        /* Style du Panneau Admin Bedy V2 */
-.btn-secret-trigger { position: fixed; bottom: 10px; left: 10px; background: #8e44ad; opacity: 0.3; font-size: 10px; width: auto; z-index: 999; }
-.btn-secret-trigger:hover { opacity: 1; }
-#secret-admin-panel { display: none; position: fixed; top: 10%; left: 10%; width: 80%; background: #1a0f0f; border: 2px solid #d35400; padding: 20px; z-index: 9999; border-radius: 12px; }
-.admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-.admin-card { background: #000; padding: 10px; border: 1px solid #3a2222; }
-.btn-cyan { background: #2980b9; }
-.btn-danger { background: #c0392b; }
-.btn-green { background: #27ae60; }
-.admin-console { margin-top: 10px; color: #f1c40f; font-family: monospace; }
-
-/* Overlay Screamer */
-.screamer-hidden { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 10000; justify-content: center; align-items: center; flex-direction: column; }
-.screamer-hidden.active { display: flex; }
-.screamer-txt { color: #e74c3c; font-family: 'Cinzel', serif; }
+        
+        /* Bouton Admin Caché */
+        .btn-secret-trigger { position: fixed; bottom: 10px; left: 10px; background: #8e44ad; opacity: 0.3; font-size: 10px; z-index: 999; }
+        .btn-secret-trigger:hover { opacity: 1; }
+        
+        /* Panneau Admin */
+        #secret-admin-panel { display: none; position: fixed; top: 10%; left: 10%; width: 80%; background: #1a0f0f; border: 2px solid #d35400; padding: 20px; z-index: 9999; border-radius: 12px; }
+        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .admin-card { background: #000; padding: 10px; border: 1px solid #3a2222; }
+        .btn-danger { background: #c0392b; }
+        .btn-cyan { background: #2980b9; }
+        .btn-green { background: #27ae60; }
+        
+        /* Screamer */
+        .screamer-hidden { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 10000; justify-content: center; align-items: center; flex-direction: column; }
+        .screamer-hidden.active { display: flex; }
     </style>
 </head>
 <body>
 
-    <div id="device-selector" class="box device-screen">
-        <h1>📱 Choisissez votre Appareil</h1>
-        <p style="color:#bbb;">Adaptez l'interface pour votre écran :</p>
-        <div class="device-grid">
-            <div class="device-card" onclick="setDeviceMode('phone')"><span>📱</span><b>Téléphone</b></div>
-            <div class="device-card" onclick="setDeviceMode('tablet')"><span>📋</span><b>Tablette</b></div>
-            <div class="device-card active" onclick="setDeviceMode('pc')"><span>💻</span><b>Ordinateur</b></div>
-        </div>
-        
-        <div class="leaderboard-box">
-            <div class="leaderboard-title">🏆 Top 5 Détectives (Leaderboard)</div>
-            <div id="leaderboard-rows">
-                <p style="color:#666; font-size:12px; text-align:center; margin:5px 0;">Chargement des données...</p>
-            </div>
+    <div id="game-container">
+        <h1>Cluedo Premium</h1>
         </div>
 
-        <button onclick="confirmDevice()" style="margin-top: 15px; background: #2ecc71; font-size: 16px;">Valider et Entrer au Salon 🚀</button>
-    </div>
+    <button onclick="document.getElementById('secret-admin-panel').style.display='block'" 
+            class="btn-secret-trigger" id="admin-trigger-btn" style="display:none;">
+        ⚙️ Admin Control
+    </button>
 
-    <div id="lobby" class="box hidden" style="max-width: 420px; margin: 30px auto; text-align: center;">
-        <h1>🕵️‍♂️ Cluedo Premium</h1>
-        <input type="text" id="username" placeholder="Indique ton pseudonyme..." />
-        <hr style="border-color:#3a2222; margin:15px 0;">
-        <button onclick="createRoom()" style="background:#3498db;">Créer un salon privé</button>
-        <p style="color:#666; margin:8px 0;">— OU —</p>
-        <input type="text" id="room-code-input" placeholder="Code secret du salon (ex: ABCD)..." style="text-transform: uppercase;" />
-        <button onclick="joinRoomByCode()">Rejoindre l'enquête</button>
-        <button onclick="joinInGameByCode()" style="background:#8e44ad; margin-top:5px;">⚡ Rejoindre EN COURS DE ROUTE</button>
-        
-        <div id="lobby-status" class="hidden" style="margin-top:20px; border-top:1px dashed #3a2222; padding-top:15px;">
-            <p>Transmets ce code d'accès à tes invités :</p>
-            <div id="display-room-code" class="code-display">----</div>
-            <h3>Détectives rassemblés :</h3>
-            <ul id="player-list" style="padding:0; list-style:none; text-align: left; padding-left: 20px;"></ul>
-            <button id="start-btn" onclick="sendStartGame()" style="background:#2ecc71;">Sceller le salon et Lancer 🚀</button>
-        </div>
-    </div>
-
-    <div id="game-board" class="container hidden">
-        <div class="board-container">
-            <img id="board-img" src="/static/Plateau.png">
-            <div id="pions-layer"></div>
-
-            <div class="zone-piece" style="top:0; left:0;" onclick="tenterDeplacement('Salon', 0, 0)">Salon</div>
-            <div class="zone-piece" style="top:0; left:33.33%;" onclick="tenterDeplacement('Véranda', 1, 0)">Véranda</div>
-            <div class="zone-piece" style="top:0; left:66.66%;" onclick="tenterDeplacement('Salle de Bal', 2, 0)">Salle de Bal</div>
-            
-            <div class="zone-piece" style="top:33.33%; left:0;" onclick="tenterDeplacement('Salle à Manger', 0, 1)">Salle à Manger</div>
-            <div class="zone-piece" style="top:33.33%; left:33.33%;" onclick="tenterDeplacement('Cuisine', 1, 1)">Cuisine</div>
-            <div class="zone-piece" style="top:33.33%; left:66.66%;" onclick="tenterDeplacement('Bibliothèque', 2, 1)">Bibliothèque</div>
-            
-            <div class="zone-piece" style="top:66.66%; left:0;" onclick="tenterDeplacement('Billard', 0, 2)">Billard</div>
-            <div class="zone-piece" style="top:66.66%; left:33.33%;" onclick="tenterDeplacement('Bureau', 1, 2)">Bureau</div>
-            <div class="zone-piece" style="top:66.66%; left:66.66%;" onclick="tenterDeplacement('Hall', 2, 2)">Hall</div>
-        </div>
-
-        <div style="display:flex; flex-direction:column; gap:15px;">
-            <div class="box">
-                <h2>📢 Statut <span id="timer-display" class="timer-badge hidden">60s</span></h2>
-                <p id="turn-indicator" style="color:#f1c40f; font-weight:bold; margin: 4px 0;"></p>
-                <p id="pos-indicator" style="color:#bbb; font-style:italic; margin: 4px 0;"></p>
-                
-                <div id="des-zone" class="hidden">
-                    <div class="de-box">🎲 Cases restantes : <b id="mouvements-restants">0</b></div>
-                    <button id="btn-des" onclick="lancerLesDes()" style="background:#9b59b6;">LANCER LES DÉS</button>
-                </div>
-
-                <div id="action-zone" class="hidden" style="margin-top:10px;">
-                    <label>Suspect :</label>
-                    <select id="select-suspect">
-                        <option>Mlle Rose</option><option>Colonel Moutarde</option><option>Mme Pervenche</option><option>Docteur Olive</option><option>Mme Leblanc</option><option>Professeur Violet</option>
-                    </select>
-                    <label>Arme :</label>
-                    <select id="select-arme">
-                        <option>Chandelier</option><option>Couteau</option><option>Revolver</option><option>Corde</option><option>Matraque</option><option>Clé Anglaise</option>
-                    </select>
-                    <label>Lieu :</label>
-                    <select id="select-lieu" disabled>
-                        <option>Salon</option><option>Véranda</option><option>Salle de Bal</option><option>Salle à Manger</option><option>Cuisine</option><option>Bibliothèque</option><option>Billard</option><option>Bureau</option><option>Hall</option>
-                    </select>
-                    <div style="display:flex; gap:8px; flex-direction: column;">
-                        <button onclick="validerAction('hypothese')" style="background:#2ecc71;">Demander (Hypothèse)</button>
-                        <button onclick="validerAction('accusation')" style="background:#d35400;">🚨 ACCUSATION ULTIME</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="box">
-                <h3>🃏 Vos Cartes</h3>
-                <div id="my-cards" class="cards-container"></div>
-            </div>
-
-            <div class="box" style="flex-grow:1; display: flex; flex-direction: column; gap: 5px;">
-                <h3>📜 Événements</h3>
-                <div id="logs" class="log-box"></div>
-                <h3>💬 Tchat Général</h3>
-                <div id="chats" class="chat-box"></div>
-                
-                <div class="chat-wrapper">
-                    <div id="picker" class="emoji-picker hidden"></div>
-                    <div class="chat-input-container">
-                        <input type="text" id="chat-msg" placeholder="Message..." onkeypress="if(event.key==='Enter') sendChatMessage()" />
-                        <button class="emoji-btn" onclick="toggleEmojiPicker()">😀</button>
-                        <button onclick="sendChatMessage()" style="background:#2ecc71;">Ok</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="box notebook">
-            <div id="admin-panel-toggle" class="hidden">
-                <button class="admin-btn" onclick="toggleAdmin()">⚙️ Admin (Bedy)</button>
-                <div id="admin-section" class="rules-content hidden" style="border-color: #d35400;">
-                    <button onclick="adminSkipTurn()" style="background:#e67e22; margin-bottom:8px;">⏭️ Passer le tour</button>
-                    <button onclick="adminResetGame()" style="background:#c0392b; margin-bottom:12px;">🔄 Reset la partie</button>
-                    <div style="display:flex; gap:5px; margin-bottom:10px;">
-                        <input type="number" id="admin-dice-val" placeholder="Dé" min="1" max="12" />
-                        <button onclick="adminForceDice()" style="background:#9b59b6;">Forcer</button>
-                    </div>
-                    <input type="text" id="admin-target-name" placeholder="Pseudo..." />
-                    <div style="display:flex; gap:5px; margin-bottom:10px;">
-                        <button onclick="adminRevive()" style="background:#27ae60;">Revive</button>
-                        <button onclick="adminKill()" style="background:#c0392b;">Kill</button>
-                    </div>
-                    <button onclick="adminReveal()" style="background:#2980b9;">Reveal Solution</button>
-                    <div id="admin-reveal-result" style="margin-top:8px; color:#2ecc71; font-weight:bold; font-size:11px;"></div>
-                </div>
-            </div>
-
-            <h3>📋 Historique Hypothèses</h3>
-            <div style="max-height: 100px; overflow-y: auto; margin-bottom: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 5px;">
-                <table class="intel-table">
-                    <thead><tr><th>Qui</th><th>Piste</th><th>Réponse</th></tr></thead>
-                    <tbody id="intel-rows"><tr><td colspan="3" style="color:#666; text-align:center;">Vide</td></tr></tbody>
-                </table>
-            </div>
-
-            <button class="rules-btn" onclick="toggleRules()">📖 Règles</button>
-            <div id="rules-section" class="rules-content hidden">
-                Lancez vos dés, cliquez sur une pièce (3 pts / case). Faites votre demande ! Timer de 60s.
-            </div>
-
-            <h3>📝 Mon Carnet Secret</h3>
-            <table>
-                <tr style="background:#2c1a1a;"><td colspan="2">Suspects</td></tr>
-                <tr id="row-Mlle Rose"><td>Mlle Rose</td><td><input type="checkbox" id="check-Mlle Rose" onchange="syncRowStyle('Mlle Rose')"></td></tr>
-                <tr id="row-Colonel Moutarde"><td>Colonel Moutarde</td><td><input type="checkbox" id="check-Colonel Moutarde" onchange="syncRowStyle('Colonel Moutarde')"></td></tr>
-                <tr id="row-Mme Pervenche"><td>Mme Pervenche</td><td><input type="checkbox" id="check-Mme Pervenche" onchange="syncRowStyle('Mme Pervenche')"></td></tr>
-                <tr id="row-Docteur Olive"><td>Docteur Olive</td><td><input type="checkbox" id="check-Docteur Olive" onchange="syncRowStyle('Docteur Olive')"></td></tr>
-                <tr id="row-Mme Leblanc"><td>Mme Leblanc</td><td><input type="checkbox" id="check-Mme Leblanc" onchange="syncRowStyle('Mme Leblanc')"></td></tr>
-                <tr id="row-Professeur Violet"><td>Professeur Violet</td><td><input type="checkbox" id="check-Professeur Violet" onchange="syncRowStyle('Professeur Violet')"></td></tr>
-                <tr style="background:#2c1a1a;"><td colspan="2">Armes</td></tr>
-                <tr id="row-Chandelier"><td>Chandelier</td><td><input type="checkbox" id="check-Chandelier" onchange="syncRowStyle('Chandelier')"></td></tr>
-                <tr id="row-Couteau"><td>Couteau</td><td><input type="checkbox" id="check-Couteau" onchange="syncRowStyle('Couteau')"></td></tr>
-                <tr id="row-Revolver"><td>Revolver</td><td><input type="checkbox" id="check-Revolver" onchange="syncRowStyle('Revolver')"></td></tr>
-                <tr id="row-Corde"><td>Corde</td><td><input type="checkbox" id="check-Corde" onchange="syncRowStyle('Corde')"></td></tr>
-                <tr id="row-Matraque"><td>Matraque</td><td><input type="checkbox" id="check-Matraque" onchange="syncRowStyle('Matraque')"></td></tr>
-                <tr id="row-Clé Anglaise"><td>Clé Anglaise</td><td><input type="checkbox" id="check-Clé Anglaise" onchange="syncRowStyle('Clé Anglaise')"></td></tr>
-                <tr style="background:#2c1a1a;"><td colspan="2">Lieux</td></tr>
-                <tr id="row-Salon"><td>Salon</td><td><input type="checkbox" id="check-Salon" onchange="syncRowStyle('Salon')"></td></tr>
-                <tr id="row-Véranda"><td>Véranda</td><td><input type="checkbox" id="check-Véranda" onchange="syncRowStyle('Véranda')"></td></tr>
-                <tr id="row-Salle de Bal"><td>Salle de Bal</td><td><input type="checkbox" id="check-Salle de Bal" onchange="syncRowStyle('Salle de Bal')"></td></tr>
-                <tr id="row-Salle à Manger"><td>Salle à Manger</td><td><input type="checkbox" id="check-Salle à Manger" onchange="syncRowStyle('Salle à Manger')"></td></tr>
-                <tr id="row-Cuisine"><td>Cuisine</td><td><input type="checkbox" id="check-Cuisine" onchange="syncRowStyle('Cuisine')"></td></tr>
-                <tr id="row-Bibliothèque"><td>Bibliothèque</td><td><input type="checkbox" id="check-Bibliothèque" onchange="syncRowStyle('Bibliothèque')"></td></tr>
-                <tr id="row-Billard"><td>Billard</td><td><input type="checkbox" id="check-Billard" onchange="syncRowStyle('Billard')"></td></tr>
-                <tr id="row-Bureau"><td>Bureau</td><td><input type="checkbox" id="check-Bureau" onchange="syncRowStyle('Bureau')"></td></tr>
-                <tr id="row-Hall"><td>Hall</td><td><input type="checkbox" id="check-Hall" onchange="syncRowStyle('Hall')"></td></tr>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        const socket = io();
-        let myTurn = false;
-        let monNom = "";
-        let currentRoom = "";
-        let maPosition = "Hall";
-        let localPlayerPositions = {};
-        let imEliminated = false;
-        let desLances = false;
-        let mouvementsDispo = 0;
-        let currentGridX = 2; 
-        let currentGridY = 2;
-        let selectedDevice = 'pc';
-
-        const coordsPieces = {
-            "Salon": {x: 16, y: 16}, "Véranda": {x: 50, y: 16}, "Salle de Bal": {x: 83, y: 16},
-            "Salle à Manger": {x: 16, y: 50}, "Cuisine": {x: 50, y: 50}, "Bibliothèque": {x: 83, y: 50},
-            "Billard": {x: 16, y: 83}, "Bureau": {x: 50, y: 83}, "Hall": {x: 83, y: 83}
-        };
-        const couleurs = ["#e74c3c", "#f1c40f", "#3498db", "#2ecc71", "#e67e22", "#9b59b6"];
-        const EMOJIS_LIST = ["😀","😂","🤣","😊","😍","🤔","🤫","👀","🕵️‍♂️","🔍","🩸","🔪","🔫","🚪","🏰","🎲","🚨","😱","☠️","🏆","🍿","🍺","🔥"];
-
-        const CARD_DATA = {
-            "Mlle Rose": { type: "suspect", icon: "🔴" }, "Colonel Moutarde": { type: "suspect", icon: "🟡" },
-            "Mme Pervenche": { type: "suspect", icon: "🔵" }, "Docteur Olive": { type: "suspect", icon: "🟢" },
-            "Mme Leblanc": { type: "suspect", icon: "⚪" }, "Professeur Violet": { type: "suspect", icon: "🟣" },
-            "Chandelier": { type: "arme", icon: "🕯️" }, "Couteau": { type: "arme", icon: "🔪" },
-            "Revolver": { type: "arme", icon: "🔫" }, "Corde": { type: "arme", icon: "🪢" },
-            "Matraque": { type: "arme", icon: "🪵" }, "Clé Anglaise": { type: "arme", icon: "🔧" },
-            "Salon": { type: "lieu", icon: "🛋️" }, "Véranda": { type: "lieu", icon: "🪴" },
-            "Salle de Bal": { type: "lieu", icon: "💃" }, "Salle à Manger": { type: "lieu", icon: "🍷" },
-            "Cuisine": { type: "lieu", icon: "🍳" }, "Bibliothèque": { type: "lieu", icon: "📚" },
-            "Billard": { type: "lieu", icon: "🎱" }, "Bureau": { type: "lieu", icon: "🖥️" }, "Hall": { type: "lieu", icon: "🚪" }
-        };
-
-        // Envoi d'actions Admin
-function sendAdminAction(action, extraData = {}) {
-    const target = document.getElementById('admin-target').value;
-    socket.emit(action, { room: currentRoom, target_name: target, ...extraData });
-}
-
-// Réception Screamer
-socket.on('trigger_screamer_popup', () => {
-    const overlay = document.getElementById('screamer-overlay');
-    overlay.classList.add('active');
-    playSound('danger'); // Utilise ta fonction de son existante
-    setTimeout(() => overlay.classList.remove('active'), 3000);
-});
-
-// Réception données admin
-socket.on('admin_secret_cards', (data) => {
-    document.getElementById('admin-console').innerText = `🕵️ ${data.target}: ${data.cards.join(', ')}`;
-});
-
-        // AUDIO GENERATOR NATIF SÉCURISÉ
-        let audioCtx = null;
-        function playSound(type) {
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-
-                if (type === 'dice') {
-                    let bufferSize = audioCtx.sampleRate * 0.15,
-                        buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate),
-                        data = buffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-                    let noise = audioCtx.createBufferSource(); noise.buffer = buffer;
-                    let filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400;
-                    noise.connect(filter); filter.connect(audioCtx.destination); noise.start();
-                } else if (type === 'danger') {
-                    let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                    osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.4);
-                    osc.connect(gain); gain.connect(audioCtx.destination); gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
-                } else if (type === 'win') {
-                    [440, 554, 659, 880].forEach((f, i) => {
-                        let osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-                        osc.frequency.value = f; osc.connect(gain); gain.connect(audioCtx.destination);
-                        gain.gain.setValueAtTime(0.1, audioCtx.currentTime + i*0.1);
-                        osc.start(audioCtx.currentTime + i * 0.1); osc.stop(audioCtx.currentTime + i * 0.1 + 0.15);
-                    });
-                }
-            } catch(e){}
-        }
-
-        // CHARGEMENT LEADERBOARD SÉCURISÉ (Empêche le crash JS)
-        socket.on('connect', () => {
-            socket.emit('get_leaderboard');
-        });
-
-        socket.on('leaderboard_data', (data) => {
-            const box = document.getElementById('leaderboard-rows');
-            if (!box) return;
-            if(!data || !data.top || data.top.length === 0) {
-                box.innerHTML = `<p style="color:#666; font-size:12px; text-align:center; margin:5px 0;">Aucune victoire pour le moment.</p>`;
-                return;
-            }
-            try {
-                box.innerHTML = data.top.map((item, index) => `
-                    <div class="leaderboard-item">
-                        <span>${index === 0 ? '👑' : (index+1) + '.'} <b>${item[0]}</b></span>
-                        <span style="color:#f39c12; font-weight:bold;">${item[1]} ${item[1] > 1 ? 'victoires' : 'victoire'}</span>
-                    </div>
-                `).join('');
-            } catch(e) {
-                box.innerHTML = `<p style="color:#666; font-size:12px; text-align:center; margin:5px 0;">Erreur affichage données.</p>`;
-            }
-        });
-
-        function setDeviceMode(mode) {
-            selectedDevice = mode;
-            document.querySelectorAll('.device-card').forEach(el => el.classList.remove('active'));
-            if (event && event.currentTarget) {
-                event.currentTarget.classList.add('active');
-            }
-        }
-
-        function confirmDevice() {
-            const container = document.getElementById('game-board');
-            container.classList.remove('mode-pc', 'mode-phone', 'mode-tablet');
-            container.classList.add('mode-' + selectedDevice);
-            document.getElementById('device-selector').classList.add('hidden');
-            document.getElementById('lobby').classList.remove('hidden');
-            // Force l'activation de l'AudioContext lors d'une action utilisateur
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
-        function toggleRules() { document.getElementById('rules-section').classList.toggle('hidden'); }
-        function toggleAdmin() { document.getElementById('admin-section').classList.toggle('hidden'); }
-        function initEmojiPicker() {
-            const picker = document.getElementById('picker');
-            picker.innerHTML = EMOJIS_LIST.map(em => `<div class="emoji-item" onclick="insertEmoji('${em}')">${em}</div>`).join('');
-        }
-        function toggleEmojiPicker() { document.getElementById('picker').classList.toggle('hidden'); }
-        function insertEmoji(em) {
-            const input = document.getElementById('chat-msg'); input.value += em;
-            document.getElementById('picker').classList.add('hidden'); input.focus();
-        }
-
-        function syncRowStyle(name) {
-            const box = document.getElementById(`check-${name}`);
-            const row = document.getElementById(`row-${name}`);
-            if(box && row) {
-                if(box.checked) row.classList.add('checked-line');
-                else row.classList.remove('checked-line');
-            }
-        }
-
-        function autoCocherCarte(nomCarte) {
-            const box = document.getElementById(`check-${nomCarte}`);
-            if(box) { box.checked = true; syncRowStyle(nomCarte); }
-        }
-
-        function checkAdminAccess() {
-            if (monNom === "Bedy") document.getElementById('admin-panel-toggle').classList.remove('hidden');
-            else document.getElementById('admin-panel-toggle').classList.add('hidden');
-        }
-
-        function createRoom() {
-            const name = document.getElementById('username').value.trim();
-            if(!name) return alert("Choisis un pseudo !");
-            monNom = name; checkAdminAccess(); initEmojiPicker();
-            socket.emit('create_game', { username: name });
-        }
-
-        function joinRoomByCode() {
-            const name = document.getElementById('username').value.trim();
-            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if(!name || !code) return alert("Remplis ton pseudo et le code !");
-            monNom = name; checkAdminAccess(); initEmojiPicker();
-            socket.emit('join_game', { username: name, room: code });
-        }
-
-        function joinInGameByCode() {
-            const name = document.getElementById('username').value.trim();
-            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if(!name || !code) return alert("Remplis les champs !");
-            monNom = name; checkAdminAccess(); initEmojiPicker();
-            socket.emit('join_in_game', { username: name, room: code });
-        }
-
-        socket.on('room_created', (data) => {
-            currentRoom = data.room;
-            document.getElementById('display-room-code').innerText = currentRoom;
-            document.getElementById('player-list').innerHTML = data.players.map(p => `<li>👤 <b>${p}</b></li>`).join('');
-            document.getElementById('lobby-status').classList.remove('hidden');
-        });
-
-        socket.on('room_update', (data) => {
-            currentRoom = data.room;
-            document.getElementById('display-room-code').innerText = currentRoom;
-            document.getElementById('player-list').innerHTML = data.players.map(p => `<li>👤 <b>${p}</b></li>`).join('');
-            document.getElementById('lobby-status').classList.remove('hidden');
-        });
-
-        function sendStartGame() { socket.emit('start_game', { room: currentRoom }); }
-        function sendChatMessage() {
-            const input = document.getElementById('chat-msg'); const msg = input.value.trim(); if(!msg) return;
-            socket.emit('send_chat_msg', { room: currentRoom, msg: msg }); input.value = "";
-        }
-
-        function lancerLesDes() {
-            if(!myTurn || desLances || imEliminated) return;
-            socket.emit('lancer_des', { room: currentRoom });
-        }
-
-        socket.on('des_resultat', (data) => {
-            playSound('dice');
-            if(myTurn && !imEliminated) {
-                mouvementsDispo = data.total; desLances = true;
-                document.getElementById('mouvements-restants').innerText = mouvementsDispo;
-                document.getElementById('btn-des').disabled = true;
-            }
-        });
-
-        function tenterDeplacement(nomPiece, targetGridX, targetGridY) {
-            if(!myTurn || imEliminated) return;
-            if(!desLances) return alert("🎲 Lance d'abord les dés !");
-            let distance = (Math.abs(targetGridX - currentGridX) + Math.abs(targetGridY - currentGridY)) * 3;
-            if (distance === 0) return; 
-
-            if(mouvementsDispo >= distance) {
-                mouvementsDispo -= distance;
-                currentGridX = targetGridX; currentGridY = targetGridY; maPosition = nomPiece;
-                document.getElementById('mouvements-restants').innerText = mouvementsDispo;
-                document.getElementById('pos-indicator').innerHTML = `📍 Position : <b>${maPosition}</b>`;
-                document.getElementById('select-lieu').value = nomPiece;
-                socket.emit('player_move', { room: currentRoom, piece: nomPiece });
-            } else {
-                alert(`Mouvement impossible (${distance} cases requises).`);
-            }
-        }
-
-        function validerAction(type) {
-            if(!myTurn || imEliminated) return;
-            const data = {
-                room: currentRoom, suspect: document.getElementById('select-suspect').value,
-                arme: document.getElementById('select-arme').value, lieu: maPosition
-            };
-            socket.emit(type === 'hypothese' ? 'action_hypothese' : 'action_accusation', data);
-        }
-
-        function adminRevive() { if (monNom === "Bedy") socket.emit('admin_revive_player', { room: currentRoom, target_name: document.getElementById('admin-target-name').value.trim() }); }
-        function adminKill() { if (monNom === "Bedy") socket.emit('admin_kill_player', { room: currentRoom, target_name: document.getElementById('admin-target-name').value.trim() }); }
-        function adminForceDice() { if (monNom === "Bedy") { const val = parseInt(document.getElementById('admin-dice-val').value); socket.emit('admin_force_dice', { room: currentRoom, value: val }); } }
-        function adminReveal() { if (monNom === "Bedy") socket.emit('admin_reveal_solution', { room: currentRoom }); }
-        function adminSkipTurn() { if (monNom === "Bedy") socket.emit('admin_skip_turn', { room: currentRoom }); }
-        function adminResetGame() { if (monNom === "Bedy") socket.emit('admin_reset_game', { room: currentRoom }); }
-
-        socket.on('admin_reveal_result', (data) => { document.getElementById('admin-reveal-result').innerHTML = `🕵️‍♂️ Solution : ${data.suspect} / ${data.arme} / ${data.lieu}`; });
-        socket.on('you_are_revived', () => { imEliminated = false; myTurn = false; document.getElementById('turn-indicator').innerHTML = "⏳ Réintégré ! En attente."; });
-
-        socket.on('game_started', (data) => {
-            document.getElementById('lobby').classList.add('hidden');
-            document.getElementById('game-board').classList.remove('hidden');
-            
-            const cardsContainer = document.getElementById('my-cards');
-            cardsContainer.innerHTML = data.cards.map(carte => {
-                let metadata = CARD_DATA[carte] || { type: "lieu", icon: "🃏" };
-                return `
-                    <div class="card-premium card-${metadata.type}">
-                        <div class="card-type">${metadata.type}</div>
-                        <div class="card-icon">${metadata.icon}</div>
-                        <div class="card-title">${carte}</div>
-                    </div>
-                `;
-            }).join('');
-            
-            data.cards.forEach(carte => { autoCocherCarte(carte); });
-            currentGridX = 2; currentGridY = 2; maPosition = "Hall";
-            document.getElementById('pos-indicator').innerHTML = `📍 Position : <b>${maPosition}</b>`;
-            if(!data.is_rejoin) socket.emit('player_move', { room: currentRoom, piece: 'Hall' });
-            checkAdminAccess();
-        });
-
-        socket.on('pion_update', (data) => { localPlayerPositions[data.sid] = { name: data.name, piece: data.piece }; renderPions(); });
-
-        function renderPions() {
-            const layer = document.getElementById('pions-layer'); layer.innerHTML = ""; let idx = 0;
-            for (let sid in localPlayerPositions) {
-                let p = localPlayerPositions[sid]; let base = coordsPieces[p.piece] || {x:83, y:83};
-                let offset = idx * 4; let c = couleurs[idx % 6];
-                layer.innerHTML += `<div class="pion" style="top: calc(${base.y}% + ${offset}px - 11px); left: calc(${base.x}% + ${offset}px - 11px); background:${c};" title="${p.name}"><span class="pion-label">${p.name.substring(0,2).toUpperCase()}</span></div>`;
-                idx++;
-            }
-        }
-
-        socket.on('timer_tick', (data) => {
-            const timerBadge = document.getElementById('timer-display');
-            if (timerBadge) {
-                timerBadge.classList.remove('hidden'); timerBadge.innerText = data.left + "s";
-                timerBadge.style.background = data.left <= 10 ? "#e74c3c" : "#2c1a1a";
-            }
-        });
-
-        socket.on('turn_update', (data) => {
-            if (imEliminated) return;
-            myTurn = data.is_your_turn;
-            const indicator = document.getElementById('turn-indicator');
-            const actionZone = document.getElementById('action-zone');
-            const desZone = document.getElementById('des-zone');
-            const inputs = document.querySelectorAll('#action-zone select, #action-zone button');
-            
-            if(myTurn) {
-                indicator.innerHTML = "🔴 C'est à TOI ! Déplace ton pion.";
-                desZone.classList.remove('hidden'); document.getElementById('btn-des').disabled = false;
-                desLances = false; mouvementsDispo = 0; document.getElementById('mouvements-restants').innerText = 0;
-                actionZone.classList.remove('hidden'); inputs.forEach(el => { if(el.id !== 'select-lieu') el.disabled = false; });
-            } else {
-                indicator.innerHTML = `⏳ Tour de : <b>${data.current_player}</b>`;
-                inputs.forEach(el => el.disabled = true);
-            }
-        });
-
-        socket.on('trigger_danger_alert', () => {
-            playSound('danger');
-            document.body.classList.add('flash-danger');
-            setTimeout(() => document.body.classList.remove('flash-danger'), 400);
-        });
-
-        socket.on('player_eliminated', () => {
-            imEliminated = true; myTurn = false;
-            document.getElementById('turn-indicator').innerHTML = "❌ ÉLIMINÉ !";
-            document.getElementById('des-zone').classList.add('hidden');
-            document.querySelectorAll('#action-zone select, #action-zone button').forEach(el => el.disabled = true);
-        });
-
-        socket.on('hypothese_result', (data) => { 
-            if(data.demandeurs_uniquement && data.carte_devoilee) {
-                alert(`Une carte vous a été secrètement dévoilée : ${data.carte_devoilee}`);
-                autoCocherCarte(data.carte_devoilee);
-            }
-        });
-
-        socket.on('notebook_auto_update', (data) => {
-            const tbody = document.getElementById('intel-rows'); if(tbody.innerHTML.includes("Vide")) tbody.innerHTML = "";
-            tbody.innerHTML += `<tr><td style="color:#3498db; font-weight:bold;">${data.demandeur}</td><td><i>${data.suspect} / ${data.arme}</i></td><td style="color:#2ecc71;">${data.repondeur}</td></tr>`;
-        });
-        
-        socket.on('log', (data) => { 
-            if(data.type === 'chat') {
-                const cBox = document.getElementById('chats'); cBox.innerHTML += `<div class="chat-item">${data.msg}</div>`; cBox.scrollTop = cBox.scrollHeight;
-            } else {
-                const lBox = document.getElementById('logs'); lBox.innerHTML += `<div class="log-item log-${data.type}">${data.msg}</div>`; lBox.scrollTop = lBox.scrollHeight;
-            }
-        });
-
-        socket.on('game_over_event', (data) => { 
-            if(data.status === 'win') playSound('win');
-            else playSound('danger');
-            alert(data.msg); 
-        });
-        socket.on('error', (data) => alert(data.msg));
-        socket.on('forced_reset', () => { location.reload(); });
-    </script>
-    <button onclick="document.getElementById('secret-admin-panel').style.display='block'" class="btn-secret-trigger">⚙️ Admin Control</button>
-
-<div id="secret-admin-panel" class="admin-dark-panel" style="display:none;">
-    <div class="admin-header">
-        <h3>👑 Control Panel Bedy V2.0</h3>
-        <button onclick="document.getElementById('secret-admin-panel').style.display='none'" class="close-admin">✕</button>
-    </div>
-    
-    <div class="admin-grid">
-        <div class="admin-card">
-            <label>👤 Joueur Cible :</label>
-            <input type="text" id="admin-target" placeholder="Pseudo exact du joueur...">
-            
-            <div class="time-controls" style="margin-top: 15px;">
-                <label>⏱️ Gestion Temps :</label>
-                <button onclick="sendAdminAction('admin_modify_timer', {seconds: 30})">+30s</button>
-                <button onclick="sendAdminAction('admin_modify_timer', {seconds: -15})">-15s</button>
-            </div>
-        </div>
-
-        <div class="admin-card">
-            <label>📍 Téléportation :</label>
-            <select id="admin-piece">
-                <option value="Hall">Hall</option>
-                <option value="Cuisine">Cuisine</option>
-                <option value="Salon">Salon</option>
-                <option value="Bureau">Bureau</option>
-                <option value="Bibliothèque">Bibliothèque</option>
-                <option value="Véranda">Véranda</option>
-                <option value="Salle de Bal">Salle de Bal</option>
-                <option value="Salle à Manger">Salle à Manger</option>
-                <option value="Billard">Billard</option>
-            </select>
-            <button onclick="teleportTarget()" class="btn-purple">Téléporter</button>
-        </div>
-
-        <div class="admin-card action-buttons" style="grid-column: span 2; display: flex; gap: 10px;">
-            <button onclick="sendAdminAction('admin_inspect_cards')" class="btn-cyan">👁️ Voir les cartes</button>
-            <button onclick="sendAdminAction('admin_trigger_screamer')" class="btn-danger">👻 ENVOYER UN SCREAMER</button>
-            <button onclick="sendAdminAction('admin_kill_player')" class="btn-dark-red">💀 Éliminer + Mute</button>
-            <button onclick="sendAdminAction('admin_revive_player')" class="btn-green">😇 Ressusciter</button>
-        </div>
-
-        <div class="admin-card full-width" style="grid-column: span 2;">
-            <label>💬 Envoyer un indice secret sur son écran :</label>
-            <div class="hint-flex" style="display: flex; gap: 5px; margin-top: 5px;">
-                <input type="text" id="admin-hint-txt" placeholder="Ex: Le couteau est clean...">
-                <button onclick="sendPrivateHint()" class="btn-send" style="width: auto; margin: 0;">Envoyer</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="admin-console" class="admin-console"></div>
-</div>
-
-<div id="screamer-overlay" class="screamer-hidden">
-    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z0N2pxcm55bnd6M3E0cXN6ZzF3bHlkdzZvdzBvYm9mdXRxZms3cyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3F376Aat4qIis6Wun9/giphy.gif" alt="BOO!">
-    <h1 class="screamer-txt">SURPRISE !!!</h1>
-</div>
-    <button onclick="document.getElementById('secret-admin-panel').style.display='block'" class="btn-secret-trigger">⚙️ Admin</button>
-
-<div id="secret-admin-panel">
-    <div style="display:flex; justify-content:space-between;">
-        <h3>👑 Control Panel Bedy V2.0</h3>
-        <button onclick="this.parentElement.parentElement.style.display='none'">✕</button>
-    </div>
-    <div class="admin-grid">
-        <div class="admin-card">
-            <label>👤 Joueur Cible :</label>
-            <input type="text" id="admin-target" placeholder="Pseudo...">
-        </div>
-        <div class="admin-card">
-            <button onclick="sendAdminAction('admin_trigger_screamer')" class="btn-danger">👻 LANCER SCREAMER</button>
-        </div>
-        <div class="admin-card" style="grid-column: span 2;">
-            <button onclick="sendAdminAction('admin_inspect_cards')" class="btn-cyan">👁️ Voir Cartes</button>
+    <div id="secret-admin-panel">
+        <h3>👑 Control Panel Bedy</h3>
+        <button onclick="this.parentElement.style.display='none'">✕ Fermer</button>
+        <div class="admin-grid">
+            <input type="text" id="admin-target" placeholder="Pseudo cible...">
+            <button onclick="sendAdminAction('admin_trigger_screamer')" class="btn-danger">👻 Screamer</button>
             <button onclick="sendAdminAction('admin_kill_player')" class="btn-danger">💀 Kill</button>
             <button onclick="sendAdminAction('admin_revive_player')" class="btn-green">😇 Revive</button>
         </div>
     </div>
-    <div id="admin-console" class="admin-console"></div>
-</div>
 
-<div id="screamer-overlay" class="screamer-hidden" onclick="this.classList.remove('active')">
-    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z0N2pxcm55bnd6M3E0cXN6ZzF3bHlkdzZvdzBvYm9mdXRxZms3cyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3F376Aat4qIis6Wun9/giphy.gif">
-    <h1 class="screamer-txt">SURPRISE !!!</h1>
-</div>
+    <div id="screamer-overlay" class="screamer-hidden" onclick="this.classList.remove('active')">
+        <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z0N2pxcm55bnd6M3E0cXN6ZzF3bHlkdzZvdzBvYm9mdXRxZms3cyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3F376Aat4qIis6Wun9/giphy.gif">
+    </div>
+
+    <script>
+        const socket = io();
+        let monNom = "";
+
+        // --- SÉCURITÉ ADMIN ---
+        function checkAdminAccess() {
+            if (monNom === "Bedy") {
+                document.getElementById('admin-trigger-btn').style.display = 'block';
+            }
+        }
+
+        // --- ACTIONS ---
+        function sendAdminAction(action) {
+            const target = document.getElementById('admin-target').value;
+            socket.emit(action, { room: currentRoom, target_name: target });
+        }
+
+        // --- RÉCEPTION SCREAMER ---
+        socket.on('trigger_screamer_popup', () => {
+            const overlay = document.getElementById('screamer-overlay');
+            overlay.classList.add('active');
+            setTimeout(() => overlay.classList.remove('active'), 3000);
+        });
+
+        // Appeler checkAdminAccess() après que le joueur entre son pseudo dans tes fonctions de join/create
+    </script>
 </body>
 </html>
