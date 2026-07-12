@@ -33,7 +33,6 @@
         .de-box { background: #2c3e50; padding: 10px; border-radius: 6px; text-align: center; font-size: 18px; margin-bottom: 10px; border: 1px solid #34495e; }
         .code-display { font-size: 24px; color: #2ecc71; font-weight: bold; letter-spacing: 4px; background: #000; padding: 5px; border-radius: 4px; margin: 10px 0; }
 
-        /* Style des Règles et Admin */
         .rules-btn { background: #34495e; margin-bottom: 10px; font-size: 13px; }
         .rules-btn:hover { background: #2c3e50; }
         .admin-btn { background: #d35400; margin-bottom: 10px; font-size: 13px; }
@@ -53,6 +52,7 @@
         <p style="color:#666; margin:8px 0;">— OU —</p>
         <input type="text" id="room-code-input" placeholder="Code de la partie (ex: ABCD)..." style="text-transform: uppercase;" />
         <button onclick="joinRoomByCode()">Rejoindre la partie</button>
+        <button onclick="joinInGameByCode()" style="background:#8e44ad; margin-top:5px;">⚡ Rejoindre EN COURS DE PARTIE</button>
         
         <div id="lobby-status" class="hidden" style="margin-top:20px; border-top:1px dashed #444; padding-top:15px;">
             <p>Partage ce code à tes amis :</p>
@@ -127,7 +127,12 @@
             <div id="admin-panel-toggle" class="hidden">
                 <button class="admin-btn" onclick="toggleAdmin()">⚙️ Panneau Admin (Bedy)</button>
                 <div id="admin-section" class="rules-content hidden" style="border-color: #d35400;">
-                    <b style="color:#d35400;">Commandes Générales :</b><br><br>
+                    <b style="color:#d35400;">Commandes Modérateur :</b><br><br>
+                    
+                    <button onclick="adminSkipTurn()" style="background:#e67e22; margin-bottom:8px;">⏭️ Passer le tour actuel</button>
+                    <button onclick="adminResetGame()" style="background:#c0392b; margin-bottom:12px;">🔄 Recommencer la partie (Reset)</button>
+                    
+                    <hr style="border-color:#333; margin:10px 0;">
                     <label>Pseudo à ressusciter :</label>
                     <input type="text" id="admin-revive-target" placeholder="Ex: Joueur123..." />
                     <button onclick="adminRevive()" style="background:#27ae60; margin-bottom:10px;">Revive (Réintégrer)</button>
@@ -239,6 +244,15 @@
             socket.emit('join_game', { username: name, room: code });
         }
 
+        function joinInGameByCode() {
+            const name = document.getElementById('username').value.trim();
+            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+            if(!name || !code) return alert("Remplis ton pseudo et le code de partie !");
+            monNom = name;
+            checkAdminAccess();
+            socket.emit('join_in_game', { username: name, room: code });
+        }
+
         socket.on('room_created', (data) => {
             currentRoom = data.room;
             document.getElementById('display-room-code').innerText = currentRoom;
@@ -305,7 +319,7 @@
             socket.emit(type === 'hypothese' ? 'action_hypothese' : 'action_accusation', data);
         }
 
-        // Fonctions d'administration secrètes
+        // --- COMMANDES ADMIN ---
         function adminRevive() {
             if (monNom !== "Bedy") return;
             const target = document.getElementById('admin-revive-target').value.trim();
@@ -316,6 +330,18 @@
         function adminReveal() {
             if (monNom !== "Bedy") return;
             socket.emit('admin_reveal_solution', { room: currentRoom });
+        }
+
+        function adminSkipTurn() {
+            if (monNom !== "Bedy") return;
+            socket.emit('admin_skip_turn', { room: currentRoom });
+        }
+
+        function adminResetGame() {
+            if (monNom !== "Bedy") return;
+            if (confirm("Voulez-vous vraiment réinitialiser la partie actuelle et redistribuer ?")) {
+                socket.emit('admin_reset_game', { room: currentRoom });
+            }
         }
 
         socket.on('admin_reveal_result', (data) => {
@@ -338,7 +364,11 @@
             currentGridX = 2; currentGridY = 2; maPosition = "Hall";
             document.getElementById('pos-indicator').innerHTML = `📍 Position initiale : <b>${maPosition}</b>`;
             document.getElementById('select-lieu').value = "Hall";
-            socket.emit('player_move', { room: currentRoom, piece: 'Hall' });
+            
+            // Uniquement si on commence normalement, on se déclare au centre
+            if(!data.is_rejoin) {
+                socket.emit('player_move', { room: currentRoom, piece: 'Hall' });
+            }
             checkAdminAccess();
         });
 
@@ -396,7 +426,6 @@
         });
 
         socket.on('hypothese_result', (data) => { 
-            // Sécurité : Seul le demandeur reçoit l'alerte pop-up détaillée
             if(data.demandeurs_uniquement && data.carte_devoilee) {
                 alert(`Une carte vous a été révélée : ${data.carte_devoilee}`);
             }
@@ -405,6 +434,11 @@
         socket.on('log', (data) => { log(data.msg); });
         socket.on('game_over', (data) => { alert(data.msg); log(`🏁 <b>${data.msg}</b>`); });
         socket.on('error', (data) => alert(data.msg));
+        
+        socket.on('forced_reset', () => {
+            alert("L'administrateur a réinitialisé la partie ! Retour au salon initial.");
+            location.reload();
+        });
     </script>
 </body>
 </html>
