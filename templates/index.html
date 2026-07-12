@@ -5,7 +5,7 @@
     <title>Cluedo Premium - Enquête Privée</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Jost:wght@300;400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght=500;700&family=Jost:wght=300;400;600&display=swap');
         
         body { 
             font-family: 'Jost', sans-serif; 
@@ -14,10 +14,10 @@
             margin: 15px; 
         }
         .container { 
-            max-width: 1500px; 
+            max-width: 1600px; 
             margin: 0 auto; 
             display: grid; 
-            grid-template-columns: 600px 1fr 350px; 
+            grid-template-columns: 600px 1fr 380px; 
             gap: 20px; 
         }
         .box { 
@@ -42,7 +42,6 @@
         .zone-piece { position: absolute; width: 33.33%; height: 33.33%; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: transparent; font-weight: bold; font-size: 13px; transition: all 0.3s ease; }
         .zone-piece:hover { background: rgba(231, 76, 60, 0.15); border: 2px dashed rgba(231, 76, 60, 0.6); color: #fff; text-shadow: 0 0 8px #000; }
         
-        /* Pions premium style gouttes 3D */
         .pion { 
             position: absolute; 
             width: 24px; 
@@ -71,29 +70,42 @@
         select, input { padding: 9px; background: #120a0a; color: #fff; border: 1px solid #3a2222; border-radius: 6px; margin-bottom: 8px; width: 100%; box-sizing: border-box; font-family: 'Jost', sans-serif; }
         select:focus, input:focus { border-color: #e74c3c; outline: none; }
         
-        /* Logs stylisés */
-        .log-box { height: 180px; overflow-y: auto; background: #080404; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 6px; border: 1px solid #2a1515; }
+        /* SEPARATION LOGS ET TCHAT */
+        .log-box { height: 140px; overflow-y: auto; background: #080404; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 6px; border: 1px solid #2a1515; margin-bottom: 10px; }
+        .chat-box { height: 140px; overflow-y: auto; background: #050805; padding: 10px; font-family: 'Jost', sans-serif; font-size: 13px; border-radius: 6px; border: 1px solid #152a15; margin-bottom: 5px; }
+        
         .log-item { margin-bottom: 5px; padding: 3px 6px; border-radius: 4px; border-left: 3px solid #777; }
         .log-system { border-left-color: #3498db; color: #75bfff; }
         .log-hypothese { border-left-color: #f1c40f; color: #f5d76e; }
         .log-elimination { border-left-color: #e74c3c; color: #ff7675; font-weight: bold; }
         .log-admin { border-left-color: #e67e22; color: #ffb476; }
-        .log-chat { border-left-color: #2ecc71; color: #a29bfe; }
+        .chat-item { margin-bottom: 4px; color: #b2bec3; }
 
-        /* Module de Tchat */
-        .chat-input-container { display: flex; gap: 5px; margin-top: 6px; }
+        /* Module Tchat + Emojis */
+        .chat-wrapper { position: relative; }
+        .chat-input-container { display: flex; gap: 5px; }
         .chat-input-container input { margin-bottom: 0; }
         .chat-input-container button { width: auto; margin-top: 0; background: #2ecc71; }
         .chat-input-container button:hover { background: #27ae60; }
+        .emoji-btn { background: #34495e; width: 40px; padding: 0; font-size: 18px; margin-top: 0; }
+        .emoji-btn:hover { background: #2c3e50; }
+        
+        .emoji-picker { 
+            position: absolute; bottom: 45px; right: 0; background: #151515; 
+            border: 1px solid #333; padding: 8px; display: grid; 
+            grid-template-columns: repeat(6, 1fr); gap: 5px; border-radius: 6px; 
+            z-index: 100; box-shadow: 0 4px 12px #000; max-height: 150px; overflow-y: auto;
+        }
+        .emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 3px; transition: transform 0.1s; }
+        .emoji-item:hover { transform: scale(1.2); }
 
         .cards-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
         .card { background: #2c1a1a; padding: 6px 12px; border-radius: 6px; border-left: 4px solid #e74c3c; font-weight: 600; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
         
         .notebook table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .notebook th, .notebook td { border: 1px solid #3a2222; padding: 5px; }
-        .notebook tr:has(input:checked) { background: rgba(0, 0, 0, 0.4) !important; color: #666; text-decoration: line-through; }
+        .notebook tr.checked-line { background: rgba(0, 0, 0, 0.5) !important; color: #555; text-decoration: line-through; }
         
-        /* Table Auto-Carnet */
         .intel-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; margin-top: 5px; }
         .intel-table th, .intel-table td { border: 1px solid #3a2222; padding: 4px; }
         .intel-table th { background: #2c1a1a; color: #e74c3c; }
@@ -105,8 +117,6 @@
         .rules-btn { background: #34495e; margin-bottom: 10px; font-size: 13px; }
         .admin-btn { background: #d35400; margin-bottom: 10px; font-size: 13px; }
         .rules-content { background: #0c0606; padding: 10px; border-radius: 6px; border: 1px solid #3a2222; font-size: 12px; line-height: 1.4; max-height: 250px; overflow-y: auto; margin-bottom: 15px; }
-        
-        /* Timer Style */
         .timer-badge { background: #c0392b; color: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 14px; margin-left: 8px; font-weight: bold; }
     </style>
 </head>
@@ -185,12 +195,20 @@
                 <div id="my-cards" class="cards-container"></div>
             </div>
 
-            <div class="box" style="flex-grow:1; display: flex; flex-direction: column;">
-                <h3>📜 Historique & Tchat</h3>
-                <div id="logs" class="log-box" style="flex-grow: 1;"></div>
-                <div class="chat-input-container">
-                    <input type="text" id="chat-msg" placeholder="Tape ton message ici..." onkeypress="if(event.key==='Enter') sendChatMessage()" />
-                    <button onclick="sendChatMessage()">Envoyer</button>
+            <div class="box" style="flex-grow:1; display: flex; flex-direction: column; gap: 5px;">
+                <h3>📜 Événements de la Partie</h3>
+                <div id="logs" class="log-box"></div>
+                
+                <h3>💬 Tchat Général</h3>
+                <div id="chats" class="chat-box"></div>
+                
+                <div class="chat-wrapper">
+                    <div id="picker" class="emoji-picker hidden"></div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chat-msg" placeholder="Discute ou vanne tes potes..." onkeypress="if(event.key==='Enter') sendChatMessage()" />
+                        <button class="emoji-btn" onclick="toggleEmojiPicker()">😀</button>
+                        <button onclick="sendChatMessage()">Envoyer</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -228,7 +246,7 @@
             </div>
 
             <h3>📋 Carnet Intelligent (Hypothèses)</h3>
-            <div style="max-height: 150px; overflow-y: auto; margin-bottom: 15px; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 5px;">
+            <div style="max-height: 110px; overflow-y: auto; margin-bottom: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 5px;">
                 <table class="intel-table">
                     <thead>
                         <tr><th>Demandeur</th><th>Hypothèse</th><th>Répondeur</th></tr>
@@ -247,29 +265,29 @@
             <h3>📝 Notes Personnelles</h3>
             <table>
                 <tr style="background:#2c1a1a;"><td colspan="2">Suspects</td></tr>
-                <tr><td>Mlle Rose</td><td><input type="checkbox"></td></tr>
-                <tr><td>Colonel Moutarde</td><td><input type="checkbox"></td></tr>
-                <tr><td>Mme Pervenche</td><td><input type="checkbox"></td></tr>
-                <tr><td>Docteur Olive</td><td><input type="checkbox"></td></tr>
-                <tr><td>Mme Leblanc</td><td><input type="checkbox"></td></tr>
-                <tr><td>Professeur Violet</td><td><input type="checkbox"></td></tr>
+                <tr id="row-Mlle Rose"><td>Mlle Rose</td><td><input type="checkbox" id="check-Mlle Rose" onchange="syncRowStyle('Mlle Rose')"></td></tr>
+                <tr id="row-Colonel Moutarde"><td>Colonel Moutarde</td><td><input type="checkbox" id="check-Colonel Moutarde" onchange="syncRowStyle('Colonel Moutarde')"></td></tr>
+                <tr id="row-Mme Pervenche"><td>Mme Pervenche</td><td><input type="checkbox" id="check-Mme Pervenche" onchange="syncRowStyle('Mme Pervenche')"></td></tr>
+                <tr id="row-Docteur Olive"><td>Docteur Olive</td><td><input type="checkbox" id="check-Docteur Olive" onchange="syncRowStyle('Docteur Olive')"></td></tr>
+                <tr id="row-Mme Leblanc"><td>Mme Leblanc</td><td><input type="checkbox" id="check-Mme Leblanc" onchange="syncRowStyle('Mme Leblanc')"></td></tr>
+                <tr id="row-Professeur Violet"><td>Professeur Violet</td><td><input type="checkbox" id="check-Professeur Violet" onchange="syncRowStyle('Professeur Violet')"></td></tr>
                 <tr style="background:#2c1a1a;"><td colspan="2">Armes</td></tr>
-                <tr><td>Chandelier</td><td><input type="checkbox"></td></tr>
-                <tr><td>Couteau</td><td><input type="checkbox"></td></tr>
-                <tr><td>Revolver</td><td><input type="checkbox"></td></tr>
-                <tr><td>Corde</td><td><input type="checkbox"></td></tr>
-                <tr><td>Matraque</td><td><input type="checkbox"></td></tr>
-                <tr><td>Clé Anglaise</td><td><input type="checkbox"></td></tr>
+                <tr id="row-Chandelier"><td>Chandelier</td><td><input type="checkbox" id="check-Chandelier" onchange="syncRowStyle('Chandelier')"></td></tr>
+                <tr id="row-Couteau"><td>Couteau</td><td><input type="checkbox" id="check-Couteau" onchange="syncRowStyle('Couteau')"></td></tr>
+                <tr id="row-Revolver"><td>Revolver</td><td><input type="checkbox" id="check-Revolver" onchange="syncRowStyle('Revolver')"></td></tr>
+                <tr id="row-Corde"><td>Corde</td><td><input type="checkbox" id="check-Corde" onchange="syncRowStyle('Corde')"></td></tr>
+                <tr id="row-Matraque"><td>Matraque</td><td><input type="checkbox" id="check-Matraque" onchange="syncRowStyle('Matraque')"></td></tr>
+                <tr id="row-Clé Anglaise"><td>Clé Anglaise</td><td><input type="checkbox" id="check-Clé Anglaise" onchange="syncRowStyle('Clé Anglaise')"></td></tr>
                 <tr style="background:#2c1a1a;"><td colspan="2">Lieux</td></tr>
-                <tr><td>Salon</td><td><input type="checkbox"></td></tr>
-                <tr><td>Véranda</td><td><input type="checkbox"></td></tr>
-                <tr><td>Salle de Bal</td><td><input type="checkbox"></td></tr>
-                <tr><td>Salle à Manger</td><td><input type="checkbox"></td></tr>
-                <tr><td>Cuisine</td><td><input type="checkbox"></td></tr>
-                <tr><td>Bibliothèque</td><td><input type="checkbox"></td></tr>
-                <tr><td>Billard</td><td><input type="checkbox"></td></tr>
-                <tr><td>Bureau</td><td><input type="checkbox"></td></tr>
-                <tr><td>Hall</td><td><input type="checkbox"></td></tr>
+                <tr id="row-Salon"><td>Salon</td><td><input type="checkbox" id="check-Salon" onchange="syncRowStyle('Salon')"></td></tr>
+                <tr id="row-Véranda"><td>Véranda</td><td><input type="checkbox" id="check-Véranda" onchange="syncRowStyle('Véranda')"></td></tr>
+                <tr id="row-Salle de Bal"><td>Salle de Bal</td><td><input type="checkbox" id="check-Salle de Bal" onchange="syncRowStyle('Salle de Bal')"></td></tr>
+                <tr id="row-Salle à Manger"><td>Salle à Manger</td><td><input type="checkbox" id="check-Salle à Manger" onchange="syncRowStyle('Salle à Manger')"></td></tr>
+                <tr id="row-Cuisine"><td>Cuisine</td><td><input type="checkbox" id="check-Cuisine" onchange="syncRowStyle('Cuisine')"></td></tr>
+                <tr id="row-Bibliothèque"><td>Bibliothèque</td><td><input type="checkbox" id="check-Bibliothèque" onchange="syncRowStyle('Bibliothèque')"></td></tr>
+                <tr id="row-Billard"><td>Billard</td><td><input type="checkbox" id="check-Billard" onchange="syncRowStyle('Billard')"></td></tr>
+                <tr id="row-Bureau"><td>Bureau</td><td><input type="checkbox" id="check-Bureau" onchange="syncRowStyle('Bureau')"></td></tr>
+                <tr id="row-Hall"><td>Hall</td><td><input type="checkbox" id="check-Hall" onchange="syncRowStyle('Hall')"></td></tr>
             </table>
         </div>
     </div>
@@ -282,23 +300,52 @@
         let maPosition = "Hall";
         let localPlayerPositions = {};
         let imEliminated = false;
-        
         let desLances = false;
         let mouvementsDispo = 0;
         let currentGridX = 2; 
         let currentGridY = 2;
-        let timerInterval = null;
 
         const coordsPieces = {
             "Salon": {x: 16, y: 16}, "Véranda": {x: 50, y: 16}, "Salle de Bal": {x: 83, y: 16},
             "Salle à Manger": {x: 16, y: 50}, "Cuisine": {x: 50, y: 50}, "Bibliothèque": {x: 83, y: 50},
             "Billard": {x: 16, y: 83}, "Bureau": {x: 50, y: 83}, "Hall": {x: 83, y: 83}
         };
-
         const couleurs = ["#e74c3c", "#f1c40f", "#3498db", "#2ecc71", "#e67e22", "#9b59b6"];
+        
+        // Liste d'émojis complète
+        const EMOJIS_LIST = ["😀","😂","🤣","😊","😍","🤔","🤫","👀","🕵️‍♂️","🔍","🩸","🔪","🔫","🚪","🏰","🎲","🚨","🤫","😱","☠️","🏆","🍿","🍺","🔥"];
 
         function toggleRules() { document.getElementById('rules-section').classList.toggle('hidden'); }
         function toggleAdmin() { document.getElementById('admin-section').classList.toggle('hidden'); }
+        
+        function initEmojiPicker() {
+            const picker = document.getElementById('picker');
+            picker.innerHTML = EMOJIS_LIST.map(em => `<div class="emoji-item" onclick="insertEmoji('${em}')">${em}</div>`).join('');
+        }
+        function toggleEmojiPicker() { document.getElementById('picker').classList.toggle('hidden'); }
+        function insertEmoji(em) {
+            const input = document.getElementById('chat-msg');
+            input.value += em;
+            document.getElementById('picker').classList.add('hidden');
+            input.focus();
+        }
+
+        function syncRowStyle(name) {
+            const box = document.getElementById(`check-${name}`);
+            const row = document.getElementById(`row-${name}`);
+            if(box && row) {
+                if(box.checked) row.classList.add('checked-line');
+                else row.classList.remove('checked-line');
+            }
+        }
+
+        function autoCocherCarte(nomCarte) {
+            const box = document.getElementById(`check-${nomCarte}`);
+            if(box) {
+                box.checked = true;
+                syncRowStyle(nomCarte);
+            }
+        }
 
         function checkAdminAccess() {
             if (monNom === "Bedy") {
@@ -311,7 +358,7 @@
         function createRoom() {
             const name = document.getElementById('username').value.trim();
             if(!name) return alert("Choisis un pseudo !");
-            monNom = name; checkAdminAccess();
+            monNom = name; checkAdminAccess(); initEmojiPicker();
             socket.emit('create_game', { username: name });
         }
 
@@ -319,7 +366,7 @@
             const name = document.getElementById('username').value.trim();
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
             if(!name || !code) return alert("Remplis ton pseudo et le code de partie !");
-            monNom = name; checkAdminAccess();
+            monNom = name; checkAdminAccess(); initEmojiPicker();
             socket.emit('join_game', { username: name, room: code });
         }
 
@@ -327,7 +374,7 @@
             const name = document.getElementById('username').value.trim();
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
             if(!name || !code) return alert("Remplis ton pseudo et le code de partie !");
-            monNom = name; checkAdminAccess();
+            monNom = name; checkAdminAccess(); initEmojiPicker();
             socket.emit('join_in_game', { username: name, room: code });
         }
 
@@ -346,12 +393,6 @@
         });
 
         function sendStartGame() { socket.emit('start_game', { room: currentRoom }); }
-
-        function log(m, type="system") { 
-            const b = document.getElementById('logs'); 
-            b.innerHTML += `<div class="log-item log-${type}">${m}</div>`; 
-            b.scrollTop = b.scrollHeight; 
-        }
 
         function sendChatMessage() {
             const input = document.getElementById('chat-msg');
@@ -376,18 +417,15 @@
         function tenterDeplacement(nomPiece, targetGridX, targetGridY) {
             if(!myTurn || imEliminated) return;
             if(!desLances) return alert("🎲 Clique d'abord sur LANCER LES DÉS !");
-            
             let distance = (Math.abs(targetGridX - currentGridX) + Math.abs(targetGridY - currentGridY)) * 3;
             if (distance === 0) return; 
 
             if(mouvementsDispo >= distance) {
                 mouvementsDispo -= distance;
                 currentGridX = targetGridX; currentGridY = targetGridY; maPosition = nomPiece;
-                
                 document.getElementById('mouvements-restants').innerText = mouvementsDispo;
                 document.getElementById('pos-indicator').innerHTML = `📍 Position : <b>${maPosition}</b>`;
                 document.getElementById('select-lieu').value = nomPiece;
-                
                 socket.emit('player_move', { room: currentRoom, piece: nomPiece });
             } else {
                 alert(`Mouvement impossible (${distance} requis, restant : ${mouvementsDispo}).`);
@@ -405,35 +443,24 @@
             socket.emit(type === 'hypothese' ? 'action_hypothese' : 'action_accusation', data);
         }
 
-        // --- COMMANDES ADMIN ---
+        // Admin actions
         function adminRevive() {
             if (monNom !== "Bedy") return;
-            const target = document.getElementById('admin-target-name').value.trim();
-            socket.emit('admin_revive_player', { room: currentRoom, target_name: target });
+            socket.emit('admin_revive_player', { room: currentRoom, target_name: document.getElementById('admin-target-name').value.trim() });
         }
         function adminKill() {
             if (monNom !== "Bedy") return;
-            const target = document.getElementById('admin-target-name').value.trim();
-            socket.emit('admin_kill_player', { room: currentRoom, target_name: target });
+            socket.emit('admin_kill_player', { room: currentRoom, target_name: document.getElementById('admin-target-name').value.trim() });
         }
         function adminForceDice() {
             if (monNom !== "Bedy") return;
             const val = parseInt(document.getElementById('admin-dice-val').value);
-            if(isNaN(val) || val < 1 || val > 12) return alert("Entre un chiffre valide entre 1 et 12.");
+            if(isNaN(val) || val < 1 || val > 12) return alert("Chiffre entre 1 et 12.");
             socket.emit('admin_force_dice', { room: currentRoom, value: val });
         }
-        function adminReveal() {
-            if (monNom !== "Bedy") return;
-            socket.emit('admin_reveal_solution', { room: currentRoom });
-        }
-        function adminSkipTurn() {
-            if (monNom !== "Bedy") return;
-            socket.emit('admin_skip_turn', { room: currentRoom });
-        }
-        function adminResetGame() {
-            if (monNom !== "Bedy") return;
-            socket.emit('admin_reset_game', { room: currentRoom });
-        }
+        function adminReveal() { if (monNom === "Bedy") socket.emit('admin_reveal_solution', { room: currentRoom }); }
+        function adminSkipTurn() { if (monNom === "Bedy") socket.emit('admin_skip_turn', { room: currentRoom }); }
+        function adminResetGame() { if (monNom === "Bedy") socket.emit('admin_reset_game', { room: currentRoom }); }
 
         socket.on('admin_reveal_result', (data) => {
             document.getElementById('admin-reveal-result').innerHTML = `🕵️‍♂️ Crime : ${data.suspect} + ${data.arme} + ${data.lieu}`;
@@ -449,13 +476,13 @@
             document.getElementById('game-board').classList.remove('hidden');
             document.getElementById('my-cards').innerHTML = data.cards.map(c => `<div class="card">${c}</div>`).join('');
             
+            // COCHE AUTOMATIQUE DES CARTES REÇUES AU DEBUT
+            data.cards.forEach(carte => { autoCocherCarte(carte); });
+
             currentGridX = 2; currentGridY = 2; maPosition = "Hall";
             document.getElementById('pos-indicator').innerHTML = `📍 Position : <b>${maPosition}</b>`;
             document.getElementById('select-lieu').value = "Hall";
-            
-            if(!data.is_rejoin) {
-                socket.emit('player_move', { room: currentRoom, piece: 'Hall' });
-            }
+            if(!data.is_rejoin) socket.emit('player_move', { room: currentRoom, piece: 'Hall' });
             checkAdminAccess();
         });
 
@@ -465,15 +492,12 @@
         });
 
         function renderPions() {
-            const layer = document.getElementById('pions-layer');
-            layer.innerHTML = "";
+            const layer = document.getElementById('pions-layer'); layer.innerHTML = "";
             let idx = 0;
             for (let sid in localPlayerPositions) {
                 let p = localPlayerPositions[sid];
                 let base = coordsPieces[p.piece] || {x:83, y:83};
-                let offset = idx * 5; 
-                let c = couleurs[idx % 6];
-                
+                let offset = idx * 5; let c = couleurs[idx % 6];
                 layer.innerHTML += `<div class="pion" style="top: calc(${base.y}% + ${offset}px - 12px); left: calc(${base.x}% + ${offset}px - 12px); background:${c};" title="${p.name}"><span class="pion-label">${p.name.substring(0,2).toUpperCase()}</span></div>`;
                 idx++;
             }
@@ -481,16 +505,13 @@
 
         socket.on('timer_tick', (data) => {
             const timerBadge = document.getElementById('timer-display');
-            timerBadge.classList.remove('hidden');
-            timerBadge.innerText = data.left + "s";
-            if(data.left <= 10) { timerBadge.style.background = "#e74c3c"; } 
-            else { timerBadge.style.background = "#2c1a1a"; }
+            timerBadge.classList.remove('hidden'); timerBadge.innerText = data.left + "s";
+            timerBadge.style.background = data.left <= 10 ? "#e74c3c" : "#2c1a1a";
         });
 
         socket.on('turn_update', (data) => {
             if (imEliminated) return;
             myTurn = data.is_your_turn;
-            
             const indicator = document.getElementById('turn-indicator');
             const actionZone = document.getElementById('action-zone');
             const desZone = document.getElementById('des-zone');
@@ -498,12 +519,9 @@
             
             if(myTurn) {
                 indicator.innerHTML = "🔴 C'est à TOI ! Déplace ton pion.";
-                desZone.classList.remove('hidden');
-                document.getElementById('btn-des').disabled = false;
-                desLances = false; mouvementsDispo = 0;
-                document.getElementById('mouvements-restants').innerText = 0;
-                actionZone.classList.remove('hidden');
-                inputs.forEach(el => { if(el.id !== 'select-lieu') el.disabled = false; });
+                desZone.classList.remove('hidden'); document.getElementById('btn-des').disabled = false;
+                desLances = false; mouvementsDispo = 0; document.getElementById('mouvements-restants').innerText = 0;
+                actionZone.classList.remove('hidden'); inputs.forEach(el => { if(el.id !== 'select-lieu') el.disabled = false; });
             } else {
                 indicator.innerHTML = `⏳ Tour de : <b>${data.current_player}</b>`;
                 inputs.forEach(el => el.disabled = true);
@@ -520,29 +538,33 @@
         socket.on('hypothese_result', (data) => { 
             if(data.demandeurs_uniquement && data.carte_devoilee) {
                 alert(`Une carte vous a été secrètement dévoilée : ${data.carte_devoilee}`);
+                // COCHE AUTOMATIQUE DE LA CARTE DEVOILÉE
+                autoCocherCarte(data.carte_devoilee);
             }
         });
 
-        // Mise à jour du Carnet Intelligent Automatique
         socket.on('notebook_auto_update', (data) => {
             const tbody = document.getElementById('intel-rows');
             if(tbody.innerHTML.includes("Aucune donnée")) tbody.innerHTML = "";
-            
-            tbody.innerHTML += `<tr>
-                <td style="color:#3498db; font-weight:bold;">${data.demandeur}</td>
-                <td><i>${data.suspect} / ${data.arme} / ${data.lieu}</i></td>
-                <td style="color:#2ecc71;">${data.repondeur}</td>
-            </tr>`;
+            tbody.innerHTML += `<tr><td style="color:#3498db; font-weight:bold;">${data.demandeur}</td><td><i>${data.suspect} / ${data.arme} / ${data.lieu}</i></td><td style="color:#2ecc71;">${data.repondeur}</td></tr>`;
         });
         
-        socket.on('log', (data) => { log(data.msg, data.type); });
-        socket.on('game_over', (data) => { alert(data.msg); log(`🏁 ${data.msg}`, "elimination"); });
+        // RECEPTION DISTINCTE HISTORIQUE vs TCHAT
+        socket.on('log', (data) => { 
+            if(data.type === 'chat') {
+                const cBox = document.getElementById('chats');
+                cBox.innerHTML += `<div class="chat-item">${data.msg}</div>`;
+                cBox.scrollTop = cBox.scrollHeight;
+            } else {
+                const lBox = document.getElementById('logs');
+                lBox.innerHTML += `<div class="log-item log-${data.type}">${data.msg}</div>`;
+                lBox.scrollTop = lBox.scrollHeight;
+            }
+        });
+
+        socket.on('game_over', (data) => { alert(data.msg); });
         socket.on('error', (data) => alert(data.msg));
-        
-        socket.on('forced_reset', () => {
-            alert("L'administrateur a réinitialisé la partie !");
-            location.reload();
-        });
+        socket.on('forced_reset', () => { location.reload(); });
     </script>
 </body>
 </html>
