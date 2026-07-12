@@ -62,7 +62,7 @@ def handle_create_game(data):
         'started': False,
         'forced_dice': None,
         'timer_count': 60,
-        'remaining_deck': []  # Sauvegarde des cartes non distribuées pour les rejoignants
+        'remaining_deck': []
     }
     join_room(room_code)
     emit('room_created', {'room': room_code, 'players': [username]})
@@ -86,7 +86,8 @@ def handle_join_game(data):
     game['order'].append(request.sid)
     join_room(room_code)
     liste_noms = [p['name'] for p in game['players'].values()]
-    emit('room_update', {'room': room_code, 'players': list_noms}, to=room_code)
+    # ICI : Correction de list_noms en liste_noms
+    emit('room_update', {'room': room_code, 'players': liste_noms}, to=room_code)
 
 @socketio.on('join_in_game')
 def handle_join_in_game(data):
@@ -101,19 +102,16 @@ def handle_join_in_game(data):
         emit('error_msg', {'msg': "La partie n'a pas encore commencé. Rejoignez normalement !"})
         return
 
-    # Ajouter le joueur
     game['players'][request.sid] = {'name': username, 'cards': [], 'piece': 'Hall', 'eliminated': False}
     game['order'].append(request.sid)
     join_room(room_code)
 
-    # Distribution équitable : on prend 2 ou 3 cartes max de la pioche restante ou on équilibre
     cartes_attribuees = []
     if game['remaining_deck']:
         nb_a_prendre = min(3, len(game['remaining_deck']))
         for _ in range(nb_a_prendre):
             cartes_attribuees.append(game['remaining_deck'].pop(0))
     else:
-        # Si la pioche est vide, on prend max 1 carte aux joueurs qui en ont le plus pour ne pas casser leur jeu
         for sid, p in game['players'].items():
             if sid != request.sid and len(p['cards']) > 3:
                 c = p['cards'].pop()
@@ -123,11 +121,9 @@ def handle_join_in_game(data):
 
     game['players'][request.sid]['cards'] = cartes_attribuees
     
-    # Envoyer l'état au joueur qui rejoint
     emit('game_started', {'cards': cartes_attribuees, 'is_rejoin': True}, to=request.sid)
     emit('log', {'msg': f"⚡ <b>{username}</b> a rejoint l'enquête en cours !", 'type': 'system'}, to=room_code)
 
-    # Mettre à jour les pions pour tout le monde
     for s_id, p_info in game['players'].items():
         emit('pion_update', {'sid': s_id, 'name': p_info['name'], 'piece': p_info['piece']}, to=room_code)
     envoyer_changement_tour(room_code)
@@ -159,14 +155,12 @@ def handle_start_game(data):
     toutes_cartes.remove(lieu)
     random.shuffle(toutes_cartes)
     
-    # Distribution stricte et équitable par round
     nb_joueurs = len(game['order'])
     cartes_par_joueur = len(toutes_cartes) // nb_joueurs
     
     for idx, sid in enumerate(game['order']):
         game['players'][sid]['cards'] = toutes_cartes[idx*cartes_par_joueur : (idx+1)*cartes_par_joueur]
         
-    # Le reste va dans le deck de réserve pour les joueurs qui rejoignent en cours de route
     game['remaining_deck'] = toutes_cartes[nb_joueurs*cartes_par_joueur:]
         
     game['started'] = True
