@@ -22,11 +22,12 @@ def load_leaderboard():
     try:
         with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    except:
+    except Exception:
         return {}
 
 def save_victory(username):
-    if not username or username == "Anonyme": return
+    if not username or username == "Anonyme":
+        return
     data = load_leaderboard()
     data[username] = data.get(username, 0) + 1
     try:
@@ -42,7 +43,6 @@ def index():
 @socketio.on('get_leaderboard')
 def handle_get_leaderboard():
     data = load_leaderboard()
-    # Trie les 5 meilleurs joueurs
     sorted_top = sorted(data.items(), key=lambda x: x[1], reverse=True)[:5]
     emit('leaderboard_data', {'top': sorted_top})
 
@@ -51,7 +51,8 @@ def handle_create_game(data):
     username = data.get('username', 'Anonyme')
     while True:
         room_code = "".join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=4))
-        if room_code not in salons: break
+        if room_code not in salons:
+            break
             
     salons[room_code] = {
         'players': {request.sid: {'name': username, 'cards': [], 'piece': 'Hall', 'eliminated': False}},
@@ -69,9 +70,11 @@ def handle_create_game(data):
 def handle_join_game(data):
     username = data.get('username', 'Anonyme')
     room_code = data.get('room', '').upper()
-    if room_code not in salons: return
+    if room_code not in salons:
+        return
     game = salons[room_code]
-    if game['started'] or len(game['players']) >= 6: return
+    if game['started'] or len(game['players']) >= 6:
+        return
 
     game['players'][request.sid] = {'name': username, 'cards': [], 'piece': 'Hall', 'eliminated': False}
     game['order'].append(request.sid)
@@ -83,7 +86,8 @@ def handle_join_game(data):
 def handle_join_in_game(data):
     username = data.get('username', 'Anonyme')
     room_code = data.get('room', '').upper()
-    if room_code not in salons or not salons[room_code]['started']: return
+    if room_code not in salons or not salons[room_code]['started']:
+        return
         
     game = salons[room_code]
     game['players'][request.sid] = {'name': username, 'cards': [], 'piece': 'Hall', 'eliminated': False}
@@ -92,7 +96,8 @@ def handle_join_in_game(data):
 
     toutes_les_cartes = []
     for sid, p in game['players'].items():
-        if sid != request.sid: toutes_les_cartes.extend(p['cards'])
+        if sid != request.sid:
+            toutes_les_cartes.extend(p['cards'])
             
     nb_a_donner = min(3, len(toutes_les_cartes) // 2)
     cartes_attribuees = []
@@ -116,16 +121,19 @@ def handle_join_in_game(data):
 def handle_chat_msg(data):
     room_code = data.get('room')
     msg = data.get('msg', '').strip()
-    if room_code not in salons or not msg: return
+    if room_code not in salons or not msg:
+        return
     sender_name = salons[room_code]['players'][request.sid]['name']
     emit('log', {'msg': f"<b>{sender_name} :</b> {msg}", 'type': 'chat'}, to=room_code)
 
 @socketio.on('start_game')
 def handle_start_game(data):
     room_code = data.get('room')
-    if room_code not in salons: return
+    if room_code not in salons:
+        return
     game = salons[room_code]
-    if len(game['players']) < 2 or game['started']: return
+    if len(game['players']) < 2 or game['started']:
+        return
 
     meurtrier, arme, lieu = random.choice(SUSPECTS), random.choice(ARMES), random.choice(LIEUX)
     game['solution'] = {'suspect': meurtrier, 'arme': arme, 'lieu': lieu}
@@ -154,7 +162,8 @@ def handle_start_game(data):
 def run_room_timer(room_code):
     while room_code in salons and salons[room_code]['started']:
         socketio.sleep(1)
-        if room_code not in salons or not salons[room_code]['started']: break
+        if room_code not in salons or not salons[room_code]['started']:
+            break
         game = salons[room_code]
         game['timer_count'] -= 1
         emit('timer_tick', {'left': game['timer_count']}, to=room_code)
@@ -165,9 +174,11 @@ def run_room_timer(room_code):
 @socketio.on('lancer_des')
 def handle_lancer_des(data):
     room_code = data.get('room')
-    if room_code not in salons: return
+    if room_code not in salons:
+        return
     game = salons[room_code]
-    if request.sid != game['order'][game['turn_idx']]: return
+    if request.sid != game['order'][game['turn_idx']]:
+        return
     
     if game.get('forced_dice') is not None:
         total = game['forced_dice']
@@ -177,13 +188,14 @@ def handle_lancer_des(data):
         total = random.randint(1, 6) + random.randint(1, 6)
         emit('log', {'msg': f"🎲 <b>{game['players'][request.sid]['name']}</b> a obtenu <b>{total}</b> !", 'type': 'system'}, to=room_code)
         
-    emit('des_resultat', {'total': total}, to=room_code) # Envoyé à tout le monde pour déclencher le bruitage
+    emit('des_resultat', {'total': total}, to=room_code)
 
 @socketio.on('player_move')
 def handle_player_move(data):
     room_code = data.get('room')
     piece = data.get('piece')
-    if room_code not in salons or request.sid not in salons[room_code]['players']: return
+    if room_code not in salons or request.sid not in salons[room_code]['players']:
+        return
     salons[room_code]['players'][request.sid]['piece'] = piece
     emit('pion_update', {'sid': request.sid, 'name': salons[room_code]['players'][request.sid]['name'], 'piece': piece}, to=room_code)
 
@@ -191,7 +203,8 @@ def handle_player_move(data):
 def handle_hypothese(data):
     room_code = data.get('room')
     suspect, arme, lieu = data.get('suspect'), data.get('arme'), data.get('lieu')
-    if room_code not in salons: return
+    if room_code not in salons:
+        return
     
     game = salons[room_code]
     demandeur_sid = request.sid
@@ -229,20 +242,21 @@ def handle_hypothese(data):
 def handle_accusation(data):
     room_code = data.get('room')
     suspect, arme, lieu = data.get('suspect'), data.get('arme'), data.get('lieu')
-    if room_code not in salons: return
+    if room_code not in salons:
+        return
     game = salons[room_code]
     sol = game['solution']
     nom_acc = game['players'][request.sid]['name']
     
     if suspect == sol['suspect'] and arme == sol['arme'] and lieu == sol['lieu']:
-        save_victory(nom_acc) # Sauvegarde de la victoire !
+        save_victory(nom_acc)
         emit('game_over_event', {'msg': f"🎉 VICTOIRE ! {nom_acc} a démasqué {sol['suspect']} ({sol['arme']} / {sol['lieu']}) !", 'status': 'win'}, to=room_code)
         game['started'] = False
     else:
         emit('log', {'msg': f"💀 <b>Fausse piste !</b> {nom_acc} est éliminé !", 'type': 'elimination'}, to=room_code)
         game['players'][request.sid]['eliminated'] = True
         emit('player_eliminated', to=request.sid)
-        emit('trigger_danger_alert', to=room_code) # Gros flash d'élimination
+        emit('trigger_danger_alert', to=room_code)
         
         actifs = [s for s, p in game['players'].items() if not p['eliminated']]
         if not actifs:
@@ -253,10 +267,12 @@ def handle_accusation(data):
 
 def passer_au_tour_suivant(room_code):
     game = salons[room_code]
-    if not game['started']: return
+    if not game['started']:
+        return
     while True:
         game['turn_idx'] = (game['turn_idx'] + 1) % len(game['order'])
-        if not game['players'][game['order'][game['turn_idx']]]['eliminated']: break
+        if not game['players'][game['order'][game['turn_idx']]]['eliminated']:
+            break
     game['timer_count'] = 60
     envoyer_changement_tour(room_code)
 
@@ -266,12 +282,12 @@ def envoyer_changement_tour(room_code):
     for sid in game['players'].keys():
         emit('turn_update', {'is_your_turn': (sid == active_sid), 'current_player': game['players'][active_sid]['name']}, to=sid)
 
-# --- PANEL ADMIN SECRETS (BEDY) ---
 @socketio.on('admin_revive_player')
 def on_admin_revive(data):
     room_code = data.get('room')
     target_name = data.get('target_name', '').strip()
-    if room_code not in salons: return
+    if room_code not in salons:
+        return
     for sid, p_info in salons[room_code]['players'].items():
         if p_info['name'] == target_name:
             p_info['eliminated'] = False
@@ -284,7 +300,8 @@ def on_admin_revive(data):
 def on_admin_kill(data):
     room_code = data.get('room')
     target_name = data.get('target_name', '').strip()
-    if room_code not in salons: return
+    if room_code not in salons:
+        return
     for sid, p_info in salons[room_code]['players'].items():
         if p_info['name'] == target_name:
             p_info['eliminated'] = True
@@ -311,7 +328,8 @@ def on_admin_reveal(data):
 @socketio.on('admin_skip_turn')
 def on_admin_skip(data):
     room_code = data.get('room')
-    if room_code not in salons: return
+    if room_code not in salons:
+        return
     emit('log', {'msg': "⚙️ <b>[ADMIN]</b> Bedy a sauté le tour.", 'type': 'admin'}, to=room_code)
     passer_au_tour_suivant(room_code)
 
@@ -328,9 +346,11 @@ def handle_disconnect():
         if request.sid in game['players']:
             nom = game['players'][request.sid]['name']
             del game['players'][request.sid]
-            if request.sid in game['order']: game['order'].remove(request.sid)
+            if request.sid in game['order']:
+                game['order'].remove(request.sid)
             emit('log', {'msg': f"🏃 {nom} a quitté le salon.", 'type': 'system'}, to=room_code)
-            if not game['players']: del salons[room_code]
+            if not game['players']:
+                del salons[room_code]
             elif game['started'] and len(game['order']) > 0:
                 game['turn_idx'] = game['turn_idx'] % len(game['order'])
                 envoyer_changement_tour(room_code)
