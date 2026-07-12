@@ -2,91 +2,132 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Cluedo En Ligne - Édition Premium</title>
+    <title>Cluedo Premium - Enquête Privée</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0b0c10; color: #c5c6c7; margin: 15px; }
-        .container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 600px 1fr 320px; gap: 20px; }
-        .box { background: #1f2833; padding: 15px; border-radius: 12px; border: 1px solid #45f3ff33; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        h1, h2, h3 { color: #45f3ff; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; }
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Jost:wght@300;400;600&display=swap');
         
-        /* Plateau et Pions */
-        .board-container { position: relative; width: 600px; height: 600px; background: #111; border: 4px solid #1f2833; border-radius: 12px; overflow: hidden; box-shadow: 0 0 20px rgba(69,243,255,0.2); }
-        #board-img { width: 100%; height: 100%; object-fit: contain; }
+        body { 
+            font-family: 'Jost', sans-serif; 
+            background: radial-gradient(circle at center, #1a0f0f 0%, #0a0505 100%); 
+            color: #e0d9d9; 
+            margin: 15px; 
+        }
+        .container { 
+            max-width: 1500px; 
+            margin: 0 auto; 
+            display: grid; 
+            grid-template-columns: 600px 1fr 350px; 
+            gap: 20px; 
+        }
+        .box { 
+            background: rgba(25, 15, 15, 0.85); 
+            backdrop-filter: blur(10px);
+            padding: 18px; 
+            border-radius: 12px; 
+            border: 1px solid rgba(231, 76, 60, 0.2); 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        h1, h2, h3 { 
+            font-family: 'Cinzel', serif; 
+            color: #e74c3c; 
+            margin-top: 0; 
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+        }
         
-        .zone-piece { position: absolute; width: 33.33%; height: 33.33%; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: transparent; font-weight: bold; font-size: 13px; transition: all 0.2s; }
-        .zone-piece:hover { background: rgba(69, 243, 255, 0.15); border: 2px dashed #45f3ff; color: #45f3ff; text-shadow: 1px 1px 4px #000; }
+        .board-container { position: relative; width: 600px; height: 600px; background: #150d0d; border: 3px solid #c0392b; border-radius: 10px; overflow: hidden; box-shadow: 0 0 25px rgba(192, 57, 43, 0.4); }
+        #board-img { width: 100%; height: 100%; object-fit: contain; opacity: 0.85; }
         
-        .pion { position: absolute; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.8); font-size: 12px; font-weight: bold; text-align: center; line-height: 32px; color: #fff; transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 10; cursor: pointer; }
+        .zone-piece { position: absolute; width: 33.33%; height: 33.33%; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: transparent; font-weight: bold; font-size: 13px; transition: all 0.3s ease; }
+        .zone-piece:hover { background: rgba(231, 76, 60, 0.15); border: 2px dashed rgba(231, 76, 60, 0.6); color: #fff; text-shadow: 0 0 8px #000; }
+        
+        /* Pions premium style gouttes 3D */
+        .pion { 
+            position: absolute; 
+            width: 24px; 
+            height: 24px; 
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 2px solid #fff; 
+            box-shadow: -2px 2px 8px rgba(0,0,0,0.7); 
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); 
+            z-index: 10; 
+        }
+        .pion-label {
+            transform: rotate(45deg);
+            font-size: 10px;
+            font-weight: 700;
+            text-align: center;
+            line-height: 24px;
+            display: block;
+            text-shadow: 1px 1px 2px #000;
+        }
 
-        /* Formulaires & Boutons */
-        button { background: #66fcf1; color: #0b0c10; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; transition: all 0.2s; text-transform: uppercase; }
-        button:hover { background: #45f3ff; transform: translateY(-1px); }
-        button:disabled { background: #2c3540 !important; cursor: not-allowed; color: #666; transform: none; }
-        select, input { padding: 10px; background: #0b0c10; color: #fff; border: 1px solid #45f3ff55; border-radius: 6px; margin-bottom: 8px; width: 100%; box-sizing: border-box; }
-        select:focus, input:focus { border-color: #45f3ff; outline: none; }
+        button { background: #e74c3c; color: #fff; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'Jost', sans-serif; transition: all 0.2s; width: 100%; margin-top: 5px; }
+        button:hover { background: #c0392b; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3); }
+        button:disabled { background: #2a1a1a !important; cursor: not-allowed; color: #555; box-shadow: none; transform: none; border: 1px solid #3a2222; }
         
-        /* Logs & Tchat */
-        .log-box { height: 160px; overflow-y: auto; background: #0b0c10; padding: 10px; font-family: 'Courier New', monospace; font-size: 12px; border-radius: 6px; border: 1px solid #333; margin-bottom: 10px; }
-        .chat-box { height: 120px; overflow-y: auto; background: #0b0c10; padding: 10px; font-size: 12px; border-radius: 6px; border: 1px solid #333; margin-bottom: 5px; }
+        select, input { padding: 9px; background: #120a0a; color: #fff; border: 1px solid #3a2222; border-radius: 6px; margin-bottom: 8px; width: 100%; box-sizing: border-box; font-family: 'Jost', sans-serif; }
+        select:focus, input:focus { border-color: #e74c3c; outline: none; }
         
+        /* Logs stylisés */
+        .log-box { height: 180px; overflow-y: auto; background: #080404; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 6px; border: 1px solid #2a1515; }
+        .log-item { margin-bottom: 5px; padding: 3px 6px; border-radius: 4px; border-left: 3px solid #777; }
+        .log-system { border-left-color: #3498db; color: #75bfff; }
+        .log-hypothese { border-left-color: #f1c40f; color: #f5d76e; }
+        .log-elimination { border-left-color: #e74c3c; color: #ff7675; font-weight: bold; }
+        .log-admin { border-left-color: #e67e22; color: #ffb476; }
+        .log-chat { border-left-color: #2ecc71; color: #a29bfe; }
+
+        /* Module de Tchat */
+        .chat-input-container { display: flex; gap: 5px; margin-top: 6px; }
+        .chat-input-container input { margin-bottom: 0; }
+        .chat-input-container button { width: auto; margin-top: 0; background: #2ecc71; }
+        .chat-input-container button:hover { background: #27ae60; }
+
         .cards-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
-        .card { background: #2c3540; padding: 8px 12px; border-radius: 6px; border-left: 4px solid #45f3ff; font-weight: bold; font-size: 12px; color: #fff; }
+        .card { background: #2c1a1a; padding: 6px 12px; border-radius: 6px; border-left: 4px solid #e74c3c; font-weight: 600; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
         
-        /* Carnet & Tableaux */
-        .notebook { max-height: 600px; overflow-y: auto; }
-        .notebook table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 15px; }
-        .notebook th, .notebook td { border: 1px solid #2c3540; padding: 6px; text-align: left; }
-        .notebook tr:has(input:checked) { background: #111 !important; color: #555; text-decoration: line-through; }
+        .notebook table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .notebook th, .notebook td { border: 1px solid #3a2222; padding: 5px; }
+        .notebook tr:has(input:checked) { background: rgba(0, 0, 0, 0.4) !important; color: #666; text-decoration: line-through; }
         
-        .hidden { display: none; }
-        .de-box { background: #0b0c10; padding: 10px; border-radius: 6px; text-align: center; font-size: 18px; margin-bottom: 10px; border: 1px solid #45f3ff55; color: #45f3ff; }
-        .code-display { font-size: 26px; color: #45f3ff; font-weight: bold; letter-spacing: 6px; background: #0b0c10; padding: 8px; border-radius: 6px; margin: 10px 0; border: 1px dashed #45f3ff; }
+        /* Table Auto-Carnet */
+        .intel-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; margin-top: 5px; }
+        .intel-table th, .intel-table td { border: 1px solid #3a2222; padding: 4px; }
+        .intel-table th { background: #2c1a1a; color: #e74c3c; }
 
-        .rules-btn { background: #1f2833; border: 1px solid #45f3ff55; color: #66fcf1; margin-bottom: 10px; }
-        .admin-btn { background: #ff4757; color: #fff; margin-bottom: 10px; }
-        .admin-btn:hover { background: #ff6b81; }
-        .rules-content { background: #0b0c10; padding: 12px; border-radius: 6px; border: 1px solid #333; font-size: 11px; line-height: 1.5; max-height: 250px; overflow-y: auto; margin-bottom: 15px; }
+        .hidden { display: none; }
+        .de-box { background: #2c1a1a; padding: 10px; border-radius: 8px; text-align: center; font-size: 18px; margin-bottom: 10px; border: 1px solid #c0392b; font-family: 'Cinzel', serif; }
+        .code-display { font-size: 24px; color: #2ecc71; font-weight: bold; letter-spacing: 4px; background: #000; padding: 5px; border-radius: 6px; margin: 10px 0; font-family: monospace; text-shadow: 0 0 8px rgba(46, 204, 113, 0.4); }
+
+        .rules-btn { background: #34495e; margin-bottom: 10px; font-size: 13px; }
+        .admin-btn { background: #d35400; margin-bottom: 10px; font-size: 13px; }
+        .rules-content { background: #0c0606; padding: 10px; border-radius: 6px; border: 1px solid #3a2222; font-size: 12px; line-height: 1.4; max-height: 250px; overflow-y: auto; margin-bottom: 15px; }
         
-        /* Classes de couleur pour l'historique */
-        .log-sys { color: #45f3ff; font-weight: bold; }
-        .log-hyp { color: #f1c40f; }
-        .log-acc { color: #e74c3c; font-weight: bold; }
-        .log-card { color: #2ecc71; }
-        .log-admin { color: #ff6b81; font-weight: bold; }
-        
-        #timer-display { font-size: 20px; font-weight: bold; color: #ff4757; background: #0b0c10; padding: 5px 10px; border-radius: 6px; display: inline-block; margin-left: 10px; border: 1px solid #ff4757; }
+        /* Timer Style */
+        .timer-badge { background: #c0392b; color: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 14px; margin-left: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="lobby" class="box" style="max-width: 420px; margin: 50px auto; text-align: center;">
         <h1>🕵️‍♂️ Cluedo Premium</h1>
-        <input type="text" id="username" placeholder="Ton pseudo..." />
-        
-        <label style="display:block; margin: 8px 0 4px; text-align:left; font-size:13px;">Choisis ton Suspect de départ :</label>
-        <select id="select-pion-depart">
-            <option value="Mlle Rose">Mlle Rose (Rouge)</option>
-            <option value="Colonel Moutarde">Colonel Moutarde (Jaune)</option>
-            <option value="Mme Pervenche">Mme Pervenche (Bleu)</option>
-            <option value="Docteur Olive">Docteur Olive (Vert)</option>
-            <option value="Mme Leblanc">Mme Leblanc (Blanc)</option>
-            <option value="Professeur Violet">Professeur Violet (Violet)</option>
-        </select>
-        
-        <hr style="border-color:#2c3540; margin:15px 0;">
-        <button onclick="createRoom()" style="background:#45f3ff; color:#0b0c10;">Créer un Salon Privé</button>
+        <input type="text" id="username" placeholder="Indique ton pseudonyme..." />
+        <hr style="border-color:#3a2222; margin:15px 0;">
+        <button onclick="createRoom()" style="background:#3498db;">Créer un salon privé</button>
         <p style="color:#666; margin:8px 0;">— OU —</p>
-        <input type="text" id="room-code-input" placeholder="Code de la partie (ex: ABCD)..." style="text-transform: uppercase;" />
-        <button onclick="joinRoomByCode()">Rejoindre avant le départ</button>
-        <button onclick="joinInGameByCode()" style="background:#9b59b6; margin-top:5px; color:#fff;">⚡ Rejoindre en pleine partie</button>
+        <input type="text" id="room-code-input" placeholder="Code secret du salon (ex: ABCD)..." style="text-transform: uppercase;" />
+        <button onclick="joinRoomByCode()">Rejoindre l'enquête</button>
+        <button onclick="joinInGameByCode()" style="background:#8e44ad; margin-top:5px;">⚡ Rejoindre EN COURS DE ROUTE</button>
         
-        <div id="lobby-status" class="hidden" style="margin-top:20px; border-top:1px dashed #45f3ff55; padding-top:15px;">
-            <p>Code d'invitation :</p>
+        <div id="lobby-status" class="hidden" style="margin-top:20px; border-top:1px dashed #3a2222; padding-top:15px;">
+            <p>Transmets ce code d'accès à tes invités :</p>
             <div id="display-room-code" class="code-display">----</div>
-            <h3>Détectives présents :</h3>
-            <ul id="player-list" style="padding:0; list-style:none; text-align:left; max-width:200px; margin:0 auto;"></ul>
-            <button id="start-btn" onclick="sendStartGame()" style="background:#2ecc71; color:#fff; margin-top:15px;">Lancer la partie 🚀</button>
+            <h3>Détectives rassemblés :</h3>
+            <ul id="player-list" style="padding:0; list-style:none; text-align: left; padding-left: 20px;"></ul>
+            <button id="start-btn" onclick="sendStartGame()" style="background:#2ecc71;">Sceller le salon et Lancer 🚀</button>
         </div>
     </div>
 
@@ -110,16 +151,13 @@
 
         <div style="display:flex; flex-direction:column; gap:15px;">
             <div class="box">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h2>📢 Statut</h2>
-                    <div id="timer-box" class="hidden">⏱️ <span id="timer-display">60</span>s</div>
-                </div>
+                <h2>📢 Statut <span id="timer-display" class="timer-badge hidden">60s</span></h2>
                 <p id="turn-indicator" style="color:#f1c40f; font-weight:bold;"></p>
                 <p id="pos-indicator" style="color:#bbb; font-style:italic;"></p>
                 
                 <div id="des-zone" class="hidden">
-                    <div class="de-box">🎲 Mouvements restants : <b id="mouvements-restants">0</b></div>
-                    <button id="btn-des" onclick="lancerLesDes()" style="background:#9b59b6; color:#fff;">LANCER LES DÉS</button>
+                    <div class="de-box">🎲 Cases restantes : <b id="mouvements-restants">0</b></div>
+                    <button id="btn-des" onclick="lancerLesDes()" style="background:#9b59b6;">LANCER LES DÉS</button>
                 </div>
 
                 <div id="action-zone" class="hidden" style="margin-top:10px;">
@@ -136,77 +174,103 @@
                         <option>Salon</option><option>Véranda</option><option>Salle de Bal</option><option>Salle à Manger</option><option>Cuisine</option><option>Bibliothèque</option><option>Billard</option><option>Bureau</option><option>Hall</option>
                     </select>
                     <div style="display:flex; gap:10px;">
-                        <button onclick="validerAction('hypothese')" style="background:#2ecc71; color:#fff;">Hypothèse</button>
-                        <button onclick="validerAction('accusation')" style="background:#d35400; color:#fff;">🚨 ACCUSATION ULTIME</button>
+                        <button onclick="validerAction('hypothese')" style="background:#2ecc71;">Demander (Hypothèse)</button>
+                        <button onclick="validerAction('accusation')" style="background:#d35400;">🚨 ACCUSATION ULTIME</button>
                     </div>
                 </div>
             </div>
 
             <div class="box">
-                <h3>🃏 Mes Cartes Privées</h3>
+                <h3>🃏 Vos Cartes</h3>
                 <div id="my-cards" class="cards-container"></div>
             </div>
 
-            <div class="box" style="flex-grow:1; display:flex; flex-direction:column; gap:10px;">
-                <div>
-                    <h3>📜 Historique de l'enquête</h3>
-                    <div id="logs" class="log-box"></div>
-                </div>
-                <div>
-                    <h3>💬 Tchat du Salon</h3>
-                    <div id="chat" class="chat-box"></div>
-                    <div style="display:flex; gap:5px;">
-                        <input type="text" id="chat-msg" placeholder="Écrire un message..." onkeydown="if(event.key === 'Enter') sendChatMessage()" style="margin:0;"/>
-                        <button onclick="sendChatMessage()" style="width:80px; margin:0; background:#45f3ff; color:#0b0c10;">Envoyer</button>
-                    </div>
+            <div class="box" style="flex-grow:1; display: flex; flex-direction: column;">
+                <h3>📜 Historique & Tchat</h3>
+                <div id="logs" class="log-box" style="flex-grow: 1;"></div>
+                <div class="chat-input-container">
+                    <input type="text" id="chat-msg" placeholder="Tape ton message ici..." onkeypress="if(event.key==='Enter') sendChatMessage()" />
+                    <button onclick="sendChatMessage()">Envoyer</button>
                 </div>
             </div>
         </div>
 
         <div class="box notebook">
             <div id="admin-panel-toggle" class="hidden">
-                <button class="admin-btn" onclick="toggleAdmin()">⚙️ Panneau Admin suprême (Bedy)</button>
-                <div id="admin-section" class="rules-content hidden" style="border-color: #ff4757; background:#111;">
-                    <b style="color:#ff4757;">Actions Rapides :</b><br>
-                    <button onclick="adminSkipTurn()" style="background:#e67e22; color:#fff; margin-bottom:6px;">⏭️ Forcer le Skip (Passer le tour)</button>
-                    <button onclick="adminResetGame()" style="background:#c0392b; color:#fff; margin-bottom:12px;">🔄 Forcer le Reset complet (Lobby)</button>
+                <button class="admin-btn" onclick="toggleAdmin()">⚙️ Panneau Admin (Bedy)</button>
+                <div id="admin-section" class="rules-content hidden" style="border-color: #d35400;">
+                    <b style="color:#d35400;">Commandes Modérateur :</b><br><br>
                     
-                    <hr style="border-color:#333; margin:8px 0;">
-                    <label>Forcer dés (Prochain lancer) :</label>
-                    <div style="display:flex; gap:5px;">
-                        <input type="number" id="admin-dice-val" placeholder="Ex: 12" min="1" max="12" style="margin:0;"/>
-                        <button onclick="adminForceDice()" style="width:80px; margin:0; background:#2980b9; color:#fff;">Fixer</button>
+                    <button onclick="adminSkipTurn()" style="background:#e67e22; margin-bottom:8px;">⏭️ Passer le tour actuel</button>
+                    <button onclick="adminResetGame()" style="background:#c0392b; margin-bottom:12px;">🔄 Recommencer la partie (Reset)</button>
+                    
+                    <hr style="border-color:#3a2222; margin:10px 0;">
+                    <div style="display:flex; gap:5px; margin-bottom:10px;">
+                        <div style="width:70%;">
+                            <label>Forcer les dés :</label>
+                            <input type="number" id="admin-dice-val" placeholder="Ex: 12" min="1" max="12" />
+                        </div>
+                        <button onclick="adminForceDice()" style="background:#9b59b6; margin-top:22px;">Appliquer</button>
                     </div>
 
-                    <hr style="border-color:#333; margin:8px 0;">
-                    <label>Éliminer un tricheur (Kill) :</label>
-                    <div style="display:flex; gap:5px;">
-                        <input type="text" id="admin-kill-target" placeholder="Pseudo exact..." style="margin:0;"/>
-                        <button onclick="adminKillPlayer()" style="width:80px; margin:0; background:#d35400; color:#fff;">Kill</button>
-                    </div>
-
-                    <hr style="border-color:#333; margin:8px 0;">
-                    <label>Ressusciter un joueur (Revive) :</label>
-                    <div style="display:flex; gap:5px;">
-                        <input type="text" id="admin-revive-target" placeholder="Pseudo exact..." style="margin:0;"/>
-                        <button onclick="adminRevive()" style="width:80px; margin:0; background:#27ae60; color:#fff;">Revive</button>
+                    <hr style="border-color:#3a2222; margin:10px 0;">
+                    <label>Cible (Revive / Kill) :</label>
+                    <input type="text" id="admin-target-name" placeholder="Pseudo exact..." />
+                    <div style="display:flex; gap:5px; margin-bottom:10px;">
+                        <button onclick="adminRevive()" style="background:#27ae60;">Revive</button>
+                        <button onclick="adminKill()" style="background:#c0392b;">Kill 💀</button>
                     </div>
                     
-                    <hr style="border-color:#333; margin:8px 0;">
-                    <button onclick="adminReveal()" style="background:#8e44ad; color:#fff;">🕵️‍♂️ Révéler la solution finale</button>
-                    <div id="admin-reveal-result" style="margin-top:8px; color:#2ecc71; font-weight:bold; font-family:monospace; font-size:12px;"></div>
+                    <hr style="border-color:#3a2222; margin:10px 0;">
+                    <button onclick="adminReveal()" style="background:#2980b9;">Reveal (Voir la solution finale)</button>
+                    <div id="admin-reveal-result" style="margin-top:8px; color:#2ecc71; font-weight:bold; font-family:monospace; font-size:11px;"></div>
                 </div>
             </div>
 
-            <h3>📋 Carnet de Note Automatique</h3>
-            <p style="font-size:10px; color:#888; margin-top:-5px;">Les indices reçus personnellement se cochent tout seuls en vert.</p>
-            <div id="auto-notebook-zone"></div>
+            <h3>📋 Carnet Intelligent (Hypothèses)</h3>
+            <div style="max-height: 150px; overflow-y: auto; margin-bottom: 15px; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 5px;">
+                <table class="intel-table">
+                    <thead>
+                        <tr><th>Demandeur</th><th>Hypothèse</th><th>Répondeur</th></tr>
+                    </thead>
+                    <tbody id="intel-rows">
+                        <tr><td colspan="3" style="color:#666; text-align:center;">Aucune donnée enregistrée</td></tr>
+                    </tbody>
+                </table>
+            </div>
 
             <button class="rules-btn" onclick="toggleRules()">📖 Règles du Jeu</button>
             <div id="rules-section" class="rules-content hidden">
-                <b>But :</b> Deviner le Suspect, l'Arme et le Lieu secret.<br>
-                <b>Déroulement :</b> Lance les dés, bouge ton pion sur les pièces, fais des hypothèses. Si un joueur a une carte demandée, elle apparaît uniquement sur ton écran !
+                <b>Déroulement :</b> Lancez vos dés, cliquez sur une pièce (3 points par case de distance). Une fois dans la pièce, faites votre demande. Le timer dure 60 secondes !
             </div>
+
+            <h3>📝 Notes Personnelles</h3>
+            <table>
+                <tr style="background:#2c1a1a;"><td colspan="2">Suspects</td></tr>
+                <tr><td>Mlle Rose</td><td><input type="checkbox"></td></tr>
+                <tr><td>Colonel Moutarde</td><td><input type="checkbox"></td></tr>
+                <tr><td>Mme Pervenche</td><td><input type="checkbox"></td></tr>
+                <tr><td>Docteur Olive</td><td><input type="checkbox"></td></tr>
+                <tr><td>Mme Leblanc</td><td><input type="checkbox"></td></tr>
+                <tr><td>Professeur Violet</td><td><input type="checkbox"></td></tr>
+                <tr style="background:#2c1a1a;"><td colspan="2">Armes</td></tr>
+                <tr><td>Chandelier</td><td><input type="checkbox"></td></tr>
+                <tr><td>Couteau</td><td><input type="checkbox"></td></tr>
+                <tr><td>Revolver</td><td><input type="checkbox"></td></tr>
+                <tr><td>Corde</td><td><input type="checkbox"></td></tr>
+                <tr><td>Matraque</td><td><input type="checkbox"></td></tr>
+                <tr><td>Clé Anglaise</td><td><input type="checkbox"></td></tr>
+                <tr style="background:#2c1a1a;"><td colspan="2">Lieux</td></tr>
+                <tr><td>Salon</td><td><input type="checkbox"></td></tr>
+                <tr><td>Véranda</td><td><input type="checkbox"></td></tr>
+                <tr><td>Salle de Bal</td><td><input type="checkbox"></td></tr>
+                <tr><td>Salle à Manger</td><td><input type="checkbox"></td></tr>
+                <tr><td>Cuisine</td><td><input type="checkbox"></td></tr>
+                <tr><td>Bibliothèque</td><td><input type="checkbox"></td></tr>
+                <tr><td>Billard</td><td><input type="checkbox"></td></tr>
+                <tr><td>Bureau</td><td><input type="checkbox"></td></tr>
+                <tr><td>Hall</td><td><input type="checkbox"></td></tr>
+            </table>
         </div>
     </div>
 
@@ -218,6 +282,7 @@
         let maPosition = "Hall";
         let localPlayerPositions = {};
         let imEliminated = false;
+        
         let desLances = false;
         let mouvementsDispo = 0;
         let currentGridX = 2; 
@@ -230,29 +295,7 @@
             "Billard": {x: 16, y: 83}, "Bureau": {x: 50, y: 83}, "Hall": {x: 83, y: 83}
         };
 
-        const pionColors = {
-            "Mlle Rose": "#e74c3c", "Colonel Moutarde": "#f1c40f", "Mme Pervenche": "#3498db",
-            "Docteur Olive": "#2ecc71", "Mme Leblanc": "#ffffff", "Professeur Violet": "#9b59b6"
-        };
-
-        // Génération propre de la grille de coche manuelle/automatique
-        function initNotebook() {
-            const listes = {
-                "Suspects": ["Mlle Rose", "Colonel Moutarde", "Mme Pervenche", "Docteur Olive", "Mme Leblanc", "Professeur Violet"],
-                "Armes": ["Chandelier", "Couteau", "Revolver", "Corde", "Matraque", "Clé Anglaise"],
-                "Lieux": ["Salon", "Véranda", "Salle de Bal", "Salle à Manger", "Cuisine", "Bibliothèque", "Billard", "Bureau", "Hall"]
-            };
-            let html = "";
-            for (let cat in listes) {
-                html += `<table><tr style="background:#2c3540; font-weight:bold;"><td colspan="2">${cat}</td></tr>`;
-                listes[cat].forEach(item => {
-                    let safeId = item.replace(/ /g, "_");
-                    html += `<tr id="row-${safeId}"><td>${item}</td><td style="width:30px; text-align:center;"><input type="checkbox" id="check-${safeId}"></td></tr>`;
-                });
-                html += `</table>`;
-            }
-            document.getElementById('auto-notebook-zone').innerHTML = html;
-        }
+        const couleurs = ["#e74c3c", "#f1c40f", "#3498db", "#2ecc71", "#e67e22", "#9b59b6"];
 
         function toggleRules() { document.getElementById('rules-section').classList.toggle('hidden'); }
         function toggleAdmin() { document.getElementById('admin-section').classList.toggle('hidden'); }
@@ -267,68 +310,56 @@
 
         function createRoom() {
             const name = document.getElementById('username').value.trim();
-            const character = document.getElementById('select-pion-depart').value;
             if(!name) return alert("Choisis un pseudo !");
-            monNom = name;
-            checkAdminAccess();
-            socket.emit('create_game', { username: name, character: character });
+            monNom = name; checkAdminAccess();
+            socket.emit('create_game', { username: name });
         }
 
         function joinRoomByCode() {
             const name = document.getElementById('username').value.trim();
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            const character = document.getElementById('select-pion-depart').value;
-            if(!name || !code) return alert("Remplis le pseudo et le code !");
-            monNom = name;
-            checkAdminAccess();
-            socket.emit('join_game', { username: name, room: code, character: character });
+            if(!name || !code) return alert("Remplis ton pseudo et le code de partie !");
+            monNom = name; checkAdminAccess();
+            socket.emit('join_game', { username: name, room: code });
         }
 
         function joinInGameByCode() {
             const name = document.getElementById('username').value.trim();
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            const character = document.getElementById('select-pion-depart').value;
-            if(!name || !code) return alert("Remplis le pseudo et le code !");
-            monNom = name;
-            checkAdminAccess();
-            socket.emit('join_in_game', { username: name, room: code, character: character });
+            if(!name || !code) return alert("Remplis ton pseudo et le code de partie !");
+            monNom = name; checkAdminAccess();
+            socket.emit('join_in_game', { username: name, room: code });
         }
 
         socket.on('room_created', (data) => {
             currentRoom = data.room;
             document.getElementById('display-room-code').innerText = currentRoom;
-            document.getElementById('player-list').innerHTML = data.players.map(p => `<li>👤 <b>${p.name}</b> (${p.char})</li>`).join('');
+            document.getElementById('player-list').innerHTML = data.players.map(p => `<li>👤 <b>${p}</b></li>`).join('');
             document.getElementById('lobby-status').classList.remove('hidden');
         });
 
         socket.on('room_update', (data) => {
             currentRoom = data.room;
             document.getElementById('display-room-code').innerText = currentRoom;
-            document.getElementById('player-list').innerHTML = data.players.map(p => `<li>👤 <b>${p.name}</b> (${p.char})</li>`).join('');
+            document.getElementById('player-list').innerHTML = data.players.map(p => `<li>👤 <b>${p}</b></li>`).join('');
             document.getElementById('lobby-status').classList.remove('hidden');
         });
 
         function sendStartGame() { socket.emit('start_game', { room: currentRoom }); }
-        
-        function addLog(msg, cl = 'log-sys') { 
+
+        function log(m, type="system") { 
             const b = document.getElementById('logs'); 
-            b.innerHTML += `<div class="${cl}">${msg}</div>`; 
+            b.innerHTML += `<div class="log-item log-${type}">${m}</div>`; 
             b.scrollTop = b.scrollHeight; 
         }
 
         function sendChatMessage() {
-            const inp = document.getElementById('chat-msg');
-            const txt = inp.value.trim();
-            if(!txt) return;
-            socket.emit('chat_message', { room: currentRoom, msg: txt, sender: monNom });
-            inp.value = "";
+            const input = document.getElementById('chat-msg');
+            const msg = input.value.trim();
+            if(!msg) return;
+            socket.emit('send_chat_msg', { room: currentRoom, msg: msg });
+            input.value = "";
         }
-
-        socket.on('chat_update', (data) => {
-            const cb = document.getElementById('chat');
-            cb.innerHTML += `<div><b>${data.sender} :</b> ${data.msg}</div>`;
-            cb.scrollTop = cb.scrollHeight;
-        });
 
         function lancerLesDes() {
             if(!myTurn || desLances || imEliminated) return;
@@ -351,9 +382,7 @@
 
             if(mouvementsDispo >= distance) {
                 mouvementsDispo -= distance;
-                currentGridX = targetGridX;
-                currentGridY = targetGridY;
-                maPosition = nomPiece;
+                currentGridX = targetGridX; currentGridY = targetGridY; maPosition = nomPiece;
                 
                 document.getElementById('mouvements-restants').innerText = mouvementsDispo;
                 document.getElementById('pos-indicator').innerHTML = `📍 Position : <b>${maPosition}</b>`;
@@ -361,7 +390,7 @@
                 
                 socket.emit('player_move', { room: currentRoom, piece: nomPiece });
             } else {
-                alert(`Mouvement insuffisant (${distance} requis, tu as ${mouvementsDispo}).`);
+                alert(`Mouvement impossible (${distance} requis, restant : ${mouvementsDispo}).`);
             }
         }
 
@@ -376,59 +405,52 @@
             socket.emit(type === 'hypothese' ? 'action_hypothese' : 'action_accusation', data);
         }
 
-        // --- INTERFACE ADMIN ACTIONS ---
+        // --- COMMANDES ADMIN ---
         function adminRevive() {
-            const target = document.getElementById('admin-revive-target').value.trim();
-            if(target) socket.emit('admin_revive_player', { room: currentRoom, target_name: target });
+            if (monNom !== "Bedy") return;
+            const target = document.getElementById('admin-target-name').value.trim();
+            socket.emit('admin_revive_player', { room: currentRoom, target_name: target });
         }
-        function adminReveal() { socket.emit('admin_reveal_solution', { room: currentRoom }); }
-        function adminSkipTurn() { socket.emit('admin_skip_turn', { room: currentRoom }); }
-        function adminResetGame() { socket.emit('admin_reset_game', { room: currentRoom }); }
-        
+        function adminKill() {
+            if (monNom !== "Bedy") return;
+            const target = document.getElementById('admin-target-name').value.trim();
+            socket.emit('admin_kill_player', { room: currentRoom, target_name: target });
+        }
         function adminForceDice() {
-            const v = parseInt(document.getElementById('admin-dice-val').value);
-            if(v >= 1 && v <= 12) socket.emit('admin_force_dice', { room: currentRoom, val: v });
+            if (monNom !== "Bedy") return;
+            const val = parseInt(document.getElementById('admin-dice-val').value);
+            if(isNaN(val) || val < 1 || val > 12) return alert("Entre un chiffre valide entre 1 et 12.");
+            socket.emit('admin_force_dice', { room: currentRoom, value: val });
         }
-        function adminKillPlayer() {
-            const target = document.getElementById('admin-kill-target').value.trim();
-            if(target) socket.emit('admin_kill_player', { room: currentRoom, target_name: target });
+        function adminReveal() {
+            if (monNom !== "Bedy") return;
+            socket.emit('admin_reveal_solution', { room: currentRoom });
+        }
+        function adminSkipTurn() {
+            if (monNom !== "Bedy") return;
+            socket.emit('admin_skip_turn', { room: currentRoom });
+        }
+        function adminResetGame() {
+            if (monNom !== "Bedy") return;
+            socket.emit('admin_reset_game', { room: currentRoom });
         }
 
         socket.on('admin_reveal_result', (data) => {
-            document.getElementById('admin-reveal-result').innerHTML = `🕵️‍♂️ Solution : ${data.suspect} + ${data.arme} + ${data.lieu}`;
+            document.getElementById('admin-reveal-result').innerHTML = `🕵️‍♂️ Crime : ${data.suspect} + ${data.arme} + ${data.lieu}`;
         });
 
         socket.on('you_are_revived', () => {
             imEliminated = false; myTurn = false;
-            document.getElementById('turn-indicator').innerHTML = "⏳ Réintégré par l'Admin !";
-            alert("Vous avez été réintégré !");
+            document.getElementById('turn-indicator').innerHTML = "⏳ Réintégré ! En attente de ton tour.";
         });
 
-        // Marquage automatique du carnet
-        function autoCheckItem(item) {
-            let safeId = item.replace(/ /g, "_");
-            let box = document.getElementById(`check-${safeId}`);
-            let row = document.getElementById(`row-${safeId}`);
-            if(box && row) {
-                box.checked = true;
-                row.style.background = "#2ecc7133";
-                row.style.color = "#2ecc71";
-            }
-        }
-
         socket.on('game_started', (data) => {
-            initNotebook();
             document.getElementById('lobby').classList.add('hidden');
             document.getElementById('game-board').classList.remove('hidden');
-            document.getElementById('timer-box').classList.remove('hidden');
-            
-            document.getElementById('my-cards').innerHTML = data.cards.map(c => {
-                autoCheckItem(c); // Coche auto de départ
-                return `<div class="card">${c}</div>`;
-            }).join('');
+            document.getElementById('my-cards').innerHTML = data.cards.map(c => `<div class="card">${c}</div>`).join('');
             
             currentGridX = 2; currentGridY = 2; maPosition = "Hall";
-            document.getElementById('pos-indicator').innerHTML = `📍 Position initiale : <b>${maPosition}</b>`;
+            document.getElementById('pos-indicator').innerHTML = `📍 Position : <b>${maPosition}</b>`;
             document.getElementById('select-lieu').value = "Hall";
             
             if(!data.is_rejoin) {
@@ -438,7 +460,7 @@
         });
 
         socket.on('pion_update', (data) => {
-            localPlayerPositions[data.sid] = { name: data.name, piece: data.piece, char: data.char };
+            localPlayerPositions[data.sid] = { name: data.name, piece: data.piece };
             renderPions();
         });
 
@@ -449,18 +471,20 @@
             for (let sid in localPlayerPositions) {
                 let p = localPlayerPositions[sid];
                 let base = coordsPieces[p.piece] || {x:83, y:83};
-                let offset = idx * 6; 
-                let c = pionColors[p.char] || "#fff";
-                let tColor = (p.char === "Mme Leblanc") ? "#000" : "#fff";
+                let offset = idx * 5; 
+                let c = couleurs[idx % 6];
                 
-                layer.innerHTML += `<div class="pion" style="top: calc(${base.y}% + ${offset}px - 16px); left: calc(${base.x}% + ${offset}px - 16px); background:${c}; color:${tColor};" title="${p.name} (${p.char})">${p.name.substring(0,2).toUpperCase()}</div>`;
+                layer.innerHTML += `<div class="pion" style="top: calc(${base.y}% + ${offset}px - 12px); left: calc(${base.x}% + ${offset}px - 12px); background:${c};" title="${p.name}"><span class="pion-label">${p.name.substring(0,2).toUpperCase()}</span></div>`;
                 idx++;
             }
         }
 
-        // Gestion du minuteur synchrone
-        socket.on('timer_update', (data) => {
-            document.getElementById('timer-display').innerText = data.seconds;
+        socket.on('timer_tick', (data) => {
+            const timerBadge = document.getElementById('timer-display');
+            timerBadge.classList.remove('hidden');
+            timerBadge.innerText = data.left + "s";
+            if(data.left <= 10) { timerBadge.style.background = "#e74c3c"; } 
+            else { timerBadge.style.background = "#2c1a1a"; }
         });
 
         socket.on('turn_update', (data) => {
@@ -473,48 +497,50 @@
             const inputs = document.querySelectorAll('#action-zone select, #action-zone button');
             
             if(myTurn) {
-                indicator.innerHTML = "🔴 C'est ton tour ! Déplace-toi et interroge.";
+                indicator.innerHTML = "🔴 C'est à TOI ! Déplace ton pion.";
                 desZone.classList.remove('hidden');
                 document.getElementById('btn-des').disabled = false;
-                desLances = false;
-                mouvementsDispo = 0;
+                desLances = false; mouvementsDispo = 0;
                 document.getElementById('mouvements-restants').innerText = 0;
                 actionZone.classList.remove('hidden');
                 inputs.forEach(el => { if(el.id !== 'select-lieu') el.disabled = false; });
             } else {
-                indicator.innerHTML = `⏳ Enquêteur en cours : <b>${data.current_player}</b>`;
+                indicator.innerHTML = `⏳ Tour de : <b>${data.current_player}</b>`;
                 inputs.forEach(el => el.disabled = true);
             }
         });
 
         socket.on('player_eliminated', () => {
             imEliminated = true; myTurn = false;
-            document.getElementById('turn-indicator').innerHTML = "❌ TU AS ÉCHOUÉ (ÉLIMINÉ)";
+            document.getElementById('turn-indicator').innerHTML = "❌ ÉLIMINÉ !";
             document.getElementById('des-zone').classList.add('hidden');
             document.querySelectorAll('#action-zone select, #action-zone button').forEach(el => el.disabled = true);
         });
 
         socket.on('hypothese_result', (data) => { 
             if(data.demandeurs_uniquement && data.carte_devoilee) {
-                alert(`Nouvel indice secret reçu : ${data.carte_devoilee}`);
-                autoCheckItem(data.carte_devoilee); // Coche auto en direct !
+                alert(`Une carte vous a été secrètement dévoilée : ${data.carte_devoilee}`);
             }
         });
-        
-        socket.on('log', (data) => { 
-            let type = 'log-sys';
-            if(data.msg.includes('soupçonne') || data.msg.includes('hypothèse')) type = 'log-hyp';
-            if(data.msg.includes('ACCUSATION')) type = 'log-acc';
-            if(data.msg.includes('montré une carte')) type = 'log-card';
-            if(data.msg.includes('[ADMIN]')) type = 'log-admin';
-            addLog(data.msg, type); 
-        });
 
-        socket.on('game_over', (data) => { alert(data.msg); addLog(`🏁 ${data.msg}`, 'log-acc'); });
+        // Mise à jour du Carnet Intelligent Automatique
+        socket.on('notebook_auto_update', (data) => {
+            const tbody = document.getElementById('intel-rows');
+            if(tbody.innerHTML.includes("Aucune donnée")) tbody.innerHTML = "";
+            
+            tbody.innerHTML += `<tr>
+                <td style="color:#3498db; font-weight:bold;">${data.demandeur}</td>
+                <td><i>${data.suspect} / ${data.arme} / ${data.lieu}</i></td>
+                <td style="color:#2ecc71;">${data.repondeur}</td>
+            </tr>`;
+        });
+        
+        socket.on('log', (data) => { log(data.msg, data.type); });
+        socket.on('game_over', (data) => { alert(data.msg); log(`🏁 ${data.msg}`, "elimination"); });
         socket.on('error', (data) => alert(data.msg));
         
         socket.on('forced_reset', () => {
-            alert("Partie réinitialisée par l'administrateur !");
+            alert("L'administrateur a réinitialisé la partie !");
             location.reload();
         });
     </script>
