@@ -1,5 +1,7 @@
 import random
 import time
+import json
+import os
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
@@ -12,10 +14,37 @@ ARMES = ["Chandelier", "Couteau", "Revolver", "Corde", "Matraque", "Clé Anglais
 LIEUX = ["Salon", "Véranda", "Salle de Bal", "Salle à Manger", "Cuisine", "Bibliothèque", "Billard", "Bureau", "Hall"]
 
 salons = {}
+LEADERBOARD_FILE = "leaderboard.json"
+
+def load_leaderboard():
+    if not os.path.exists(LEADERBOARD_FILE):
+        return {}
+    try:
+        with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_victory(username):
+    if not username or username == "Anonyme": return
+    data = load_leaderboard()
+    data[username] = data.get(username, 0) + 1
+    try:
+        with open(LEADERBOARD_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print("Erreur écriture classement :", e)
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@socketio.on('get_leaderboard')
+def handle_get_leaderboard():
+    data = load_leaderboard()
+    # Trie les 5 meilleurs joueurs
+    sorted_top = sorted(data.items(), key=lambda x: x[1], reverse=True)[:5]
+    emit('leaderboard_data', {'top': sorted_top})
 
 @socketio.on('create_game')
 def handle_create_game(data):
@@ -48,7 +77,7 @@ def handle_join_game(data):
     game['order'].append(request.sid)
     join_room(room_code)
     liste_noms = [p['name'] for p in game['players'].values()]
-    emit('room_update', {'room': room_code, 'players': liste_noms}, to=room_code)
+    emit('room_update', {'room': room_code, 'players': list_noms}, to=room_code)
 
 @socketio.on('join_in_game')
 def handle_join_in_game(data):
@@ -140,7 +169,6 @@ def handle_lancer_des(data):
     game = salons[room_code]
     if request.sid != game['order'][game['turn_idx']]: return
     
-    # CORRECTION IMPORTANTE DE LA COMMANDE FORCER DÉS
     if game.get('forced_dice') is not None:
         total = game['forced_dice']
         game['forced_dice'] = None 
@@ -149,7 +177,7 @@ def handle_lancer_des(data):
         total = random.randint(1, 6) + random.randint(1, 6)
         emit('log', {'msg': f"🎲 <b>{game['players'][request.sid]['name']}</b> a obtenu <b>{total}</b> !", 'type': 'system'}, to=room_code)
         
-    emit('des_resultat', {'total': total}, to=request.sid)
+    emit('des_resultat', {'total': total}, to=room_code) # Envoyé à tout le monde pour déclencher le bruitage
 
 @socketio.on('player_move')
 def handle_player_move(data):
@@ -207,16 +235,18 @@ def handle_accusation(data):
     nom_acc = game['players'][request.sid]['name']
     
     if suspect == sol['suspect'] and arme == sol['arme'] and lieu == sol['lieu']:
-        emit('game_over', {'msg': f"🎉 VICTOIRE ! {nom_acc} a démasqué {sol['suspect']} ({sol['arme']} / {sol['lieu']}) !"}, to=room_code)
+        save_victory(nom_acc) # Sauvegarde de la victoire !
+        emit('game_over_event', {'msg': f"🎉 VICTOIRE ! {nom_acc} a démasqué {sol['suspect']} ({sol['arme']} / {sol['lieu']}) !", 'status': 'win'}, to=room_code)
         game['started'] = False
     else:
         emit('log', {'msg': f"💀 <b>Fausse piste !</b> {nom_acc} est éliminé !", 'type': 'elimination'}, to=room_code)
         game['players'][request.sid]['eliminated'] = True
         emit('player_eliminated', to=request.sid)
+        emit('trigger_danger_alert', to=room_code) # Gros flash d'élimination
         
         actifs = [s for s, p in game['players'].items() if not p['eliminated']]
         if not actifs:
-            emit('game_over', {'msg': f"💀 Fin ! Solution : {sol['suspect']} ({sol['arme']} / {sol['lieu']})"}, to=room_code)
+            emit('game_over_event', {'msg': f"💀 Fin ! Solution : {sol['suspect']} ({sol['arme']} / {sol['lieu']})", 'status': 'fail'}, to=room_code)
             game['started'] = False
         else:
             passer_au_tour_suivant(room_code)
@@ -259,6 +289,7 @@ def on_admin_kill(data):
         if p_info['name'] == target_name:
             p_info['eliminated'] = True
             emit('player_eliminated', to=sid)
+            emit('trigger_danger_alert', to=room_code)
             emit('log', {'msg': f"⚙️ <b>[ADMIN]</b> Bedy a éliminé 💀 <b>{target_name}</b> !", 'type': 'admin'}, to=room_code)
             if sid == salons[room_code]['order'][salons[room_code]['turn_idx']]:
                 passer_au_tour_suivant(room_code)
