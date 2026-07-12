@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cluedo Premium - Enquête Privée</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <style>
@@ -11,19 +12,46 @@
             font-family: 'Jost', sans-serif; 
             background: radial-gradient(circle at center, #1a0f0f 0%, #0a0505 100%); 
             color: #e0d9d9; 
-            margin: 15px; 
+            margin: 10px; 
+            padding: 0;
         }
-        .container { 
-            max-width: 1600px; 
-            margin: 0 auto; 
-            display: grid; 
-            grid-template-columns: 600px 1fr 380px; 
-            gap: 20px; 
+        
+        /* ÉCRAN DE SÉLECTION APPAREIL */
+        .device-screen {
+            max-width: 500px;
+            margin: 60px auto;
+            text-align: center;
         }
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .device-card {
+            background: rgba(40, 20, 20, 0.6);
+            border: 2px solid #3a2222;
+            border-radius: 10px;
+            padding: 15px 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        .device-card:hover, .device-card.active {
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.15);
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+        }
+        .device-card span {
+            font-size: 30px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
         .box { 
             background: rgba(25, 15, 15, 0.85); 
             backdrop-filter: blur(10px);
-            padding: 18px; 
+            padding: 15px; 
             border-radius: 12px; 
             border: 1px solid rgba(231, 76, 60, 0.2); 
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -36,7 +64,19 @@
             text-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
         }
         
-        .board-container { position: relative; width: 600px; height: 600px; background: #150d0d; border: 3px solid #c0392b; border-radius: 10px; overflow: hidden; box-shadow: 0 0 25px rgba(192, 57, 43, 0.4); }
+        /* LE PLATEAU RESPONSIF DYNAMIQUE */
+        .board-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 600px; 
+            aspect-ratio: 1 / 1;
+            background: #150d0d; 
+            border: 3px solid #c0392b; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            box-shadow: 0 0 25px rgba(192, 57, 43, 0.4); 
+            margin: 0 auto;
+        }
         #board-img { width: 100%; height: 100%; object-fit: contain; opacity: 0.85; }
         
         .zone-piece { position: absolute; width: 33.33%; height: 33.33%; box-sizing: border-box; cursor: pointer; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: transparent; font-weight: bold; font-size: 13px; transition: all 0.3s ease; }
@@ -44,8 +84,8 @@
         
         .pion { 
             position: absolute; 
-            width: 24px; 
-            height: 24px; 
+            width: 22px; 
+            height: 22px; 
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
             border: 2px solid #fff; 
@@ -55,10 +95,10 @@
         }
         .pion-label {
             transform: rotate(45deg);
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             text-align: center;
-            line-height: 24px;
+            line-height: 22px;
             display: block;
             text-shadow: 1px 1px 2px #000;
         }
@@ -68,11 +108,9 @@
         button:disabled { background: #2a1a1a !important; cursor: not-allowed; color: #555; box-shadow: none; transform: none; border: 1px solid #3a2222; }
         
         select, input { padding: 9px; background: #120a0a; color: #fff; border: 1px solid #3a2222; border-radius: 6px; margin-bottom: 8px; width: 100%; box-sizing: border-box; font-family: 'Jost', sans-serif; }
-        select:focus, input:focus { border-color: #e74c3c; outline: none; }
         
-        /* SEPARATION LOGS ET TCHAT */
-        .log-box { height: 140px; overflow-y: auto; background: #080404; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 6px; border: 1px solid #2a1515; margin-bottom: 10px; }
-        .chat-box { height: 140px; overflow-y: auto; background: #050805; padding: 10px; font-family: 'Jost', sans-serif; font-size: 13px; border-radius: 6px; border: 1px solid #152a15; margin-bottom: 5px; }
+        .log-box { height: 130px; overflow-y: auto; background: #080404; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 6px; border: 1px solid #2a1515; margin-bottom: 10px; }
+        .chat-box { height: 130px; overflow-y: auto; background: #050805; padding: 10px; font-family: 'Jost', sans-serif; font-size: 13px; border-radius: 6px; border: 1px solid #152a15; margin-bottom: 5px; }
         
         .log-item { margin-bottom: 5px; padding: 3px 6px; border-radius: 4px; border-left: 3px solid #777; }
         .log-system { border-left-color: #3498db; color: #75bfff; }
@@ -81,26 +119,22 @@
         .log-admin { border-left-color: #e67e22; color: #ffb476; }
         .chat-item { margin-bottom: 4px; color: #b2bec3; }
 
-        /* Module Tchat + Emojis */
         .chat-wrapper { position: relative; }
         .chat-input-container { display: flex; gap: 5px; }
         .chat-input-container input { margin-bottom: 0; }
         .chat-input-container button { width: auto; margin-top: 0; background: #2ecc71; }
-        .chat-input-container button:hover { background: #27ae60; }
         .emoji-btn { background: #34495e; width: 40px; padding: 0; font-size: 18px; margin-top: 0; }
-        .emoji-btn:hover { background: #2c3e50; }
         
         .emoji-picker { 
             position: absolute; bottom: 45px; right: 0; background: #151515; 
             border: 1px solid #333; padding: 8px; display: grid; 
             grid-template-columns: repeat(6, 1fr); gap: 5px; border-radius: 6px; 
-            z-index: 100; box-shadow: 0 4px 12px #000; max-height: 150px; overflow-y: auto;
+            z-index: 100; box-shadow: 0 4px 12px #000; max-height: 130px; overflow-y: auto;
         }
-        .emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 3px; transition: transform 0.1s; }
-        .emoji-item:hover { transform: scale(1.2); }
+        .emoji-item { cursor: pointer; font-size: 18px; text-align: center; padding: 3px; }
 
         .cards-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
-        .card { background: #2c1a1a; padding: 6px 12px; border-radius: 6px; border-left: 4px solid #e74c3c; font-weight: 600; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .card { background: #2c1a1a; padding: 6px 12px; border-radius: 6px; border-left: 4px solid #e74c3c; font-weight: 600; font-size: 12px; }
         
         .notebook table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .notebook th, .notebook td { border: 1px solid #3a2222; padding: 5px; }
@@ -108,21 +142,73 @@
         
         .intel-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; margin-top: 5px; }
         .intel-table th, .intel-table td { border: 1px solid #3a2222; padding: 4px; }
-        .intel-table th { background: #2c1a1a; color: #e74c3c; }
 
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         .de-box { background: #2c1a1a; padding: 10px; border-radius: 8px; text-align: center; font-size: 18px; margin-bottom: 10px; border: 1px solid #c0392b; font-family: 'Cinzel', serif; }
-        .code-display { font-size: 24px; color: #2ecc71; font-weight: bold; letter-spacing: 4px; background: #000; padding: 5px; border-radius: 6px; margin: 10px 0; font-family: monospace; text-shadow: 0 0 8px rgba(46, 204, 113, 0.4); }
+        .code-display { font-size: 24px; color: #2ecc71; font-weight: bold; letter-spacing: 4px; background: #000; padding: 5px; border-radius: 6px; margin: 10px 0; font-family: monospace; }
 
         .rules-btn { background: #34495e; margin-bottom: 10px; font-size: 13px; }
         .admin-btn { background: #d35400; margin-bottom: 10px; font-size: 13px; }
-        .rules-content { background: #0c0606; padding: 10px; border-radius: 6px; border: 1px solid #3a2222; font-size: 12px; line-height: 1.4; max-height: 250px; overflow-y: auto; margin-bottom: 15px; }
-        .timer-badge { background: #c0392b; color: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 14px; margin-left: 8px; font-weight: bold; }
+        .rules-content { background: #0c0606; padding: 10px; border-radius: 6px; border: 1px solid #3a2222; font-size: 12px; max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
+        .timer-badge { background: #c0392b; color: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 14px; margin-left: 8px; }
+
+        /* STRUCTURE PAR DÉFAUT (SERA MODIFIÉE PAR LE SCRIPT SELON LE CHOIX) */
+        .container { 
+            max-width: 1600px; 
+            margin: 0 auto; 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 15px; 
+        }
+
+        /* 💻 CONFIGURATION PC */
+        .mode-pc {
+            grid-template-columns: 550px 1fr 350px !important;
+        }
+
+        /* 📱 CONFIGURATION TÉLÉPHONE (TOUT EN VERTICAL, PLUS COMPACT) */
+        .mode-phone {
+            grid-template-columns: 1fr !important;
+        }
+        .mode-phone .board-container {
+            max-width: 340px !important; /* Petit plateau adapté aux écrans verticaux */
+        }
+        .mode-phone .notebook table {
+            font-size: 11px !important;
+        }
+
+        /* 📁 CONFIGURATION TABLETTE (DEUX COLONNES INTERMÉDIAIRES) */
+        .mode-tablet {
+            grid-template-columns: 1fr 1fr !important;
+        }
+        .mode-tablet .notebook {
+            grid-column: span 2; /* Carnet prend toute la largeur en bas */
+        }
     </style>
 </head>
 <body>
 
-    <div id="lobby" class="box" style="max-width: 420px; margin: 50px auto; text-align: center;">
+    <div id="device-selector" class="box device-screen">
+        <h1>📱 Choisissez votre Appareil</h1>
+        <p style="color:#bbb;">Adaptez l'affichage de l'interface pour une meilleure expérience de jeu :</p>
+        <div class="device-grid">
+            <div class="device-card" onclick="setDeviceMode('phone')">
+                <span>📱</span>
+                <b>Téléphone</b>
+            </div>
+            <div class="device-card" onclick="setDeviceMode('tablet')">
+                <span>平板</span>
+                <b>Tablette</b>
+            </div>
+            <div class="device-card active" onclick="setDeviceMode('pc')">
+                <span>💻</span>
+                <b>Ordinateur</b>
+            </div>
+        </div>
+        <button onclick="confirmDevice()" style="margin-top: 25px; background: #2ecc71; font-size: 16px;">Valider et Entrer au Salon 🚀</button>
+    </div>
+
+    <div id="lobby" class="box hidden" style="max-width: 420px; margin: 30px auto; text-align: center;">
         <h1>🕵️‍♂️ Cluedo Premium</h1>
         <input type="text" id="username" placeholder="Indique ton pseudonyme..." />
         <hr style="border-color:#3a2222; margin:15px 0;">
@@ -162,8 +248,8 @@
         <div style="display:flex; flex-direction:column; gap:15px;">
             <div class="box">
                 <h2>📢 Statut <span id="timer-display" class="timer-badge hidden">60s</span></h2>
-                <p id="turn-indicator" style="color:#f1c40f; font-weight:bold;"></p>
-                <p id="pos-indicator" style="color:#bbb; font-style:italic;"></p>
+                <p id="turn-indicator" style="color:#f1c40f; font-weight:bold; margin: 4px 0;"></p>
+                <p id="pos-indicator" style="color:#bbb; font-style:italic; margin: 4px 0;"></p>
                 
                 <div id="des-zone" class="hidden">
                     <div class="de-box">🎲 Cases restantes : <b id="mouvements-restants">0</b></div>
@@ -183,7 +269,7 @@
                     <select id="select-lieu" disabled>
                         <option>Salon</option><option>Véranda</option><option>Salle de Bal</option><option>Salle à Manger</option><option>Cuisine</option><option>Bibliothèque</option><option>Billard</option><option>Bureau</option><option>Hall</option>
                     </select>
-                    <div style="display:flex; gap:10px;">
+                    <div style="display:flex; gap:8px; flex-direction: column;">
                         <button onclick="validerAction('hypothese')" style="background:#2ecc71;">Demander (Hypothèse)</button>
                         <button onclick="validerAction('accusation')" style="background:#d35400;">🚨 ACCUSATION ULTIME</button>
                     </div>
@@ -196,7 +282,7 @@
             </div>
 
             <div class="box" style="flex-grow:1; display: flex; flex-direction: column; gap: 5px;">
-                <h3>📜 Événements de la Partie</h3>
+                <h3>📜 Événements</h3>
                 <div id="logs" class="log-box"></div>
                 
                 <h3>💬 Tchat Général</h3>
@@ -205,9 +291,9 @@
                 <div class="chat-wrapper">
                     <div id="picker" class="emoji-picker hidden"></div>
                     <div class="chat-input-container">
-                        <input type="text" id="chat-msg" placeholder="Discute ou vanne tes potes..." onkeypress="if(event.key==='Enter') sendChatMessage()" />
+                        <input type="text" id="chat-msg" placeholder="Message..." onkeypress="if(event.key==='Enter') sendChatMessage()" />
                         <button class="emoji-btn" onclick="toggleEmojiPicker()">😀</button>
-                        <button onclick="sendChatMessage()">Envoyer</button>
+                        <button onclick="sendChatMessage()" style="background:#2ecc71;">Ok</button>
                     </div>
                 </div>
             </div>
@@ -215,54 +301,40 @@
 
         <div class="box notebook">
             <div id="admin-panel-toggle" class="hidden">
-                <button class="admin-btn" onclick="toggleAdmin()">⚙️ Panneau Admin (Bedy)</button>
+                <button class="admin-btn" onclick="toggleAdmin()">⚙️ Admin (Bedy)</button>
                 <div id="admin-section" class="rules-content hidden" style="border-color: #d35400;">
-                    <b style="color:#d35400;">Commandes Modérateur :</b><br><br>
-                    
-                    <button onclick="adminSkipTurn()" style="background:#e67e22; margin-bottom:8px;">⏭️ Passer le tour actuel</button>
-                    <button onclick="adminResetGame()" style="background:#c0392b; margin-bottom:12px;">🔄 Recommencer la partie (Reset)</button>
-                    
-                    <hr style="border-color:#3a2222; margin:10px 0;">
+                    <button onclick="adminSkipTurn()" style="background:#e67e22; margin-bottom:8px;">⏭️ Passer le tour</button>
+                    <button onclick="adminResetGame()" style="background:#c0392b; margin-bottom:12px;">🔄 Reset la partie</button>
                     <div style="display:flex; gap:5px; margin-bottom:10px;">
-                        <div style="width:70%;">
-                            <label>Forcer les dés :</label>
-                            <input type="number" id="admin-dice-val" placeholder="Ex: 12" min="1" max="12" />
-                        </div>
-                        <button onclick="adminForceDice()" style="background:#9b59b6; margin-top:22px;">Appliquer</button>
+                        <input type="number" id="admin-dice-val" placeholder="Dé" min="1" max="12" />
+                        <button onclick="adminForceDice()" style="background:#9b59b6;">Forcer</button>
                     </div>
-
-                    <hr style="border-color:#3a2222; margin:10px 0;">
-                    <label>Cible (Revive / Kill) :</label>
-                    <input type="text" id="admin-target-name" placeholder="Pseudo exact..." />
+                    <input type="text" id="admin-target-name" placeholder="Pseudo..." />
                     <div style="display:flex; gap:5px; margin-bottom:10px;">
                         <button onclick="adminRevive()" style="background:#27ae60;">Revive</button>
-                        <button onclick="adminKill()" style="background:#c0392b;">Kill 💀</button>
+                        <button onclick="adminKill()" style="background:#c0392b;">Kill</button>
                     </div>
-                    
-                    <hr style="border-color:#3a2222; margin:10px 0;">
-                    <button onclick="adminReveal()" style="background:#2980b9;">Reveal (Voir la solution finale)</button>
-                    <div id="admin-reveal-result" style="margin-top:8px; color:#2ecc71; font-weight:bold; font-family:monospace; font-size:11px;"></div>
+                    <button onclick="adminReveal()" style="background:#2980b9;">Reveal Solution</button>
+                    <div id="admin-reveal-result" style="margin-top:8px; color:#2ecc71; font-weight:bold; font-size:11px;"></div>
                 </div>
             </div>
 
-            <h3>📋 Carnet Intelligent (Hypothèses)</h3>
-            <div style="max-height: 110px; overflow-y: auto; margin-bottom: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 5px;">
+            <h3>📋 Historique Hypothèses</h3>
+            <div style="max-height: 100px; overflow-y: auto; margin-bottom: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 5px;">
                 <table class="intel-table">
-                    <thead>
-                        <tr><th>Demandeur</th><th>Hypothèse</th><th>Répondeur</th></tr>
-                    </thead>
+                    <thead><tr><th>Qui</th><th>Piste</th><th>Réponse</th></tr></thead>
                     <tbody id="intel-rows">
-                        <tr><td colspan="3" style="color:#666; text-align:center;">Aucune donnée enregistrée</td></tr>
+                        <tr><td colspan="3" style="color:#666; text-align:center;">Vide</td></tr>
                     </tbody>
                 </table>
             </div>
 
-            <button class="rules-btn" onclick="toggleRules()">📖 Règles du Jeu</button>
+            <button class="rules-btn" onclick="toggleRules()">📖 Règles</button>
             <div id="rules-section" class="rules-content hidden">
-                <b>Déroulement :</b> Lancez vos dés, cliquez sur une pièce (3 points par case de distance). Une fois dans la pièce, faites votre demande. Le timer dure 60 secondes !
+                Lancez vos dés, cliquez sur une pièce (3 pts / case). Faites votre demande ! Timer de 60s.
             </div>
 
-            <h3>📝 Notes Personnelles</h3>
+            <h3>📝 Mon Carnet Secret</h3>
             <table>
                 <tr style="background:#2c1a1a;"><td colspan="2">Suspects</td></tr>
                 <tr id="row-Mlle Rose"><td>Mlle Rose</td><td><input type="checkbox" id="check-Mlle Rose" onchange="syncRowStyle('Mlle Rose')"></td></tr>
@@ -304,6 +376,7 @@
         let mouvementsDispo = 0;
         let currentGridX = 2; 
         let currentGridY = 2;
+        let selectedDevice = 'pc'; // Par défaut
 
         const coordsPieces = {
             "Salon": {x: 16, y: 16}, "Véranda": {x: 50, y: 16}, "Salle de Bal": {x: 83, y: 16},
@@ -311,9 +384,26 @@
             "Billard": {x: 16, y: 83}, "Bureau": {x: 50, y: 83}, "Hall": {x: 83, y: 83}
         };
         const couleurs = ["#e74c3c", "#f1c40f", "#3498db", "#2ecc71", "#e67e22", "#9b59b6"];
-        
-        // Liste d'émojis complète
-        const EMOJIS_LIST = ["😀","😂","🤣","😊","😍","🤔","🤫","👀","🕵️‍♂️","🔍","🩸","🔪","🔫","🚪","🏰","🎲","🚨","🤫","😱","☠️","🏆","🍿","🍺","🔥"];
+        const EMOJIS_LIST = ["😀","😂","🤣","😊","😍","🤔","🤫","👀","🕵️‍♂️","🔍","🩸","🔪","🔫","🚪","🏰","🎲","🚨","😱","☠️","🏆","🍿","🍺","🔥"];
+
+        // FONCTION SYSTÈME DE SELECTION DE L'APPAREIL
+        function setDeviceMode(mode) {
+            selectedDevice = mode;
+            document.querySelectorAll('.device-card').forEach(el => el.classList.remove('active'));
+            // Petit hack visuel pour cibler l'élément cliqué
+            event.currentTarget.classList.add('active');
+        }
+
+        function confirmDevice() {
+            // Applique la bonne classe CSS sur la grille principale du jeu
+            const container = document.getElementById('game-board');
+            container.classList.remove('mode-pc', 'mode-phone', 'mode-tablet');
+            container.classList.add('mode-' + selectedDevice);
+
+            // Cache l'écran de sélection et affiche le lobby principal
+            document.getElementById('device-selector').classList.add('hidden');
+            document.getElementById('lobby').classList.remove('hidden');
+        }
 
         function toggleRules() { document.getElementById('rules-section').classList.toggle('hidden'); }
         function toggleAdmin() { document.getElementById('admin-section').classList.toggle('hidden'); }
@@ -476,7 +566,6 @@
             document.getElementById('game-board').classList.remove('hidden');
             document.getElementById('my-cards').innerHTML = data.cards.map(c => `<div class="card">${c}</div>`).join('');
             
-            // COCHE AUTOMATIQUE DES CARTES REÇUES AU DEBUT
             data.cards.forEach(carte => { autoCocherCarte(carte); });
 
             currentGridX = 2; currentGridY = 2; maPosition = "Hall";
@@ -497,8 +586,8 @@
             for (let sid in localPlayerPositions) {
                 let p = localPlayerPositions[sid];
                 let base = coordsPieces[p.piece] || {x:83, y:83};
-                let offset = idx * 5; let c = couleurs[idx % 6];
-                layer.innerHTML += `<div class="pion" style="top: calc(${base.y}% + ${offset}px - 12px); left: calc(${base.x}% + ${offset}px - 12px); background:${c};" title="${p.name}"><span class="pion-label">${p.name.substring(0,2).toUpperCase()}</span></div>`;
+                let offset = idx * 4; let c = couleurs[idx % 6];
+                layer.innerHTML += `<div class="pion" style="top: calc(${base.y}% + ${offset}px - 11px); left: calc(${base.x}% + ${offset}px - 11px); background:${c};" title="${p.name}"><span class="pion-label">${p.name.substring(0,2).toUpperCase()}</span></div>`;
                 idx++;
             }
         }
@@ -538,18 +627,16 @@
         socket.on('hypothese_result', (data) => { 
             if(data.demandeurs_uniquement && data.carte_devoilee) {
                 alert(`Une carte vous a été secrètement dévoilée : ${data.carte_devoilee}`);
-                // COCHE AUTOMATIQUE DE LA CARTE DEVOILÉE
                 autoCocherCarte(data.carte_devoilee);
             }
         });
 
         socket.on('notebook_auto_update', (data) => {
             const tbody = document.getElementById('intel-rows');
-            if(tbody.innerHTML.includes("Aucune donnée")) tbody.innerHTML = "";
-            tbody.innerHTML += `<tr><td style="color:#3498db; font-weight:bold;">${data.demandeur}</td><td><i>${data.suspect} / ${data.arme} / ${data.lieu}</i></td><td style="color:#2ecc71;">${data.repondeur}</td></tr>`;
+            if(tbody.innerHTML.includes("Vide")) tbody.innerHTML = "";
+            tbody.innerHTML += `<tr><td style="color:#3498db; font-weight:bold;">${data.demandeur}</td><td><i>${data.suspect} / ${data.arme}</i></td><td style="color:#2ecc71;">${data.repondeur}</td></tr>`;
         });
         
-        // RECEPTION DISTINCTE HISTORIQUE vs TCHAT
         socket.on('log', (data) => { 
             if(data.type === 'chat') {
                 const cBox = document.getElementById('chats');
