@@ -17,7 +17,7 @@ LIEUX = ["Salon", "Véranda", "Salle de Bal", "Salle à Manger", "Cuisine", "Bib
 # 🤬 LISTE DES MOTS BANNIS (Gros mots et insultes)
 BAD_WORDS = [
     r"fils de p\w*", r"putain", r"merde", r"connard", r"salope", 
-    r"encul\w*", r"fdp", r"ntm", r"chiasse", r"bâtard"
+    r"encul\w*", r"fdp", r"ntm", r"chiasse", r"bâtard, r"TDC",, r"trout du cul"
 ]
 
 salons = {}
