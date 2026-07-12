@@ -12,7 +12,6 @@ ARMES = ["Chandelier", "Couteau", "Revolver", "Corde", "Matraque", "Clé Anglais
 LIEUX = ["Salon", "Véranda", "Salle de Bal", "Salle à Manger", "Cuisine", "Bibliothèque", "Billard", "Bureau", "Hall"]
 
 # Structure globale des salons
-# { 'ROOM_CODE': { 'players': { sid: {name, cards, piece, eliminated} }, 'order': [sid1, sid2], 'turn_idx': 0, 'solution': {...}, 'started': False } }
 salons = {}
 
 @app.route('/')
@@ -23,7 +22,6 @@ def index():
 @socketio.on('create_game')
 def handle_create_game(data):
     username = data.get('username', 'Anonyme')
-    # Génère un code de salon unique à 4 lettres
     while True:
         room_code = "".join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=4))
         if room_code not in salons:
@@ -45,7 +43,6 @@ def handle_create_game(data):
     }
     
     join_room(room_code)
-    # Renvoie les informations au créateur
     emit('room_created', {
         'room': room_code,
         'players': [username]
@@ -69,7 +66,6 @@ def handle_join_game(data):
         emit('error', {'msg': "Le salon est plein (max 6 joueurs)."})
         return
 
-    # Ajouter le joueur au salon
     game['players'][request.sid] = {
         'name': username,
         'cards': [],
@@ -79,8 +75,6 @@ def handle_join_game(data):
     game['order'].append(request.sid)
     
     join_room(room_code)
-    
-    # Mettre à jour la liste des joueurs pour tout le monde dans le salon
     liste_noms = [p['name'] for p in game['players'].values()]
     emit('room_update', {'room': room_code, 'players': liste_noms}, to=room_code)
 
@@ -99,7 +93,6 @@ def handle_start_game(data):
     if game['started']:
         return
 
-    # 1. Sélection de la solution (le crime)
     meurtrier = random.choice(SUSPECTS)
     arme_crime = random.choice(ARMES)
     lieu_crime = random.choice(LIEUX)
@@ -110,7 +103,6 @@ def handle_start_game(data):
         'lieu': lieu_crime
     }
     
-    # 2. Préparation et distribution des cartes restantes
     toutes_cartes = SUSPECTS + ARMES + LIEUX
     toutes_cartes.remove(meurtrier)
     toutes_cartes.remove(arme_crime)
@@ -127,13 +119,11 @@ def handle_start_game(data):
         
     game['started'] = True
     
-    # Envoyer à chaque joueur ses cartes de départ respectives
     for sid, p_info in game['players'].items():
         emit('game_started', {'cards': p_info['cards']}, to=sid)
         
     emit('log', {'msg': "🚀 La partie commence ! Trouvez le coupable !"}, to=room_code)
     
-    # Placer tous les pions au centre (Hall) initialement
     for sid, p_info in game['players'].items():
         emit('pion_update', {'sid': sid, 'name': p_info['name'], 'piece': 'Hall'}, to=room_code)
         
@@ -168,7 +158,6 @@ def handle_player_move(data):
     
     game['players'][request.sid]['piece'] = piece
     
-    # Met à jour la position visuelle du rond pour tous les joueurs connectés
     emit('pion_update', {
         'sid': request.sid,
         'name': game['players'][request.sid]['name'],
@@ -190,14 +179,12 @@ def handle_hypothese(data):
     
     emit('log', {'msg': f"🔍 <b>{demandeur_nom}</b> fait une hypothèse : <i>{suspect}</i> dans le <i>{lieu}</i> avec le <i>{arme}</i>."}, to=room_code)
     
-    # Téléporte automatiquement le suspect appelé dans la pièce de l'enquête
     for sid, p_info in game['players'].items():
         if p_info['name'] == suspect:
             p_info['piece'] = lieu
             emit('pion_update', {'sid': sid, 'name': p_info['name'], 'piece': lieu}, to=room_code)
             emit('log', {'msg': f"👤 {suspect} est appelé dans le/la {lieu}."}, to=room_code)
 
-    # Tour de table pour trouver une carte à montrer au demandeur
     idx_demandeur = game['order'].index(demandeur_sid)
     carte_trouvee = None
     joueur_qui_montre = None
@@ -207,17 +194,14 @@ def handle_hypothese(data):
         target_sid = game['order'][check_idx]
         target_player = game['players'][target_sid]
         
-        # Trouver les cartes correspondantes possédées par ce joueur
         matches = [c for c in target_player['cards'] if c in [suspect, arme, lieu]]
         if matches:
-            carte_trouvee = random.choice(matches) # Choisit une carte au hasard parmi ses doublons
+            carte_trouvee = random.choice(matches)
             joueur_qui_montre = target_player['name']
             break
             
     if carte_trouvee:
-        # 1. Tout le monde sait QUI a montré une carte à QUI
         emit('log', {'msg': f"🃏 <b>{joueur_qui_montre}</b> a montré une carte discrètement à <b>{demandeur_nom}</b>."}, to=room_code)
-        # 2. SEUL le demandeur reçoit le nom exact de la vraie carte dévoilée
         emit('hypothese_result', {'demandeurs_uniquement': True, 'carte_devoilee': carte_trouvee}, to=demandeur_sid)
     else:
         emit('log', {'msg': "❌ Personne n'a pu contredire cette hypothèse !"}, to=room_code)
@@ -240,7 +224,6 @@ def handle_accusation(data):
     
     emit('log', {'msg': f"🚨 <b>{nom_accusateur}</b> PORTE UNE ACCUSATION ULTIME : <b>{suspect}</b>, avec le <b>{arme}</b>, dans le <b>{lieu}</b> !"}, to=room_code)
     
-    # Vérification stricte de la solution
     if suspect == sol['suspect'] and arme == sol['arme'] and lieu == sol['lieu']:
         emit('game_over', {'msg': f"🎉 VICTOIRE ! {nom_accusateur} a résolu le crime ! C'était bien {sol['suspect']} avec le {sol['arme']} dans le {sol['lieu']}."}, to=room_code)
         game['started'] = False
@@ -249,7 +232,6 @@ def handle_accusation(data):
         game['players'][accusateur_sid]['eliminated'] = True
         emit('player_eliminated', to=accusateur_sid)
         
-        # Vérifie s'il reste des joueurs actifs
         actifs = [sid for sid, p in game['players'].items() if not p['eliminated']]
         if not actifs:
             emit('game_over', {'msg': f"💀 Fin de partie ! Tout le monde a échoué. Le tueur s'échappe ! C'était : {sol['suspect']} ({sol['arme']} au {sol['lieu']})"}, to=room_code)
@@ -262,7 +244,6 @@ def passer_au_tour_suivant(room_code):
     game = salons[room_code]
     if not game['started']: return
     
-    # Passer au joueur suivant non éliminé
     while True:
         game['turn_idx'] = (game['turn_idx'] + 1) % len(game['order'])
         next_sid = game['order'][game['turn_idx']]
@@ -286,12 +267,11 @@ def envoyer_changement_tour(room_code):
 @socketio.on('admin_revive_player')
 def on_admin_revive(data):
     room_code = data.get('room')
-    target_name = data.get('target_name', '').trim()
+    target_name = data.get('target_name', '').strip()  # Correction ici : .strip() au lieu de .trim()
     
     if room_code not in salons: return
     game = salons[room_code]
     
-    # Recherche du joueur par son pseudo dans la room
     for sid, p_info in game['players'].items():
         if p_info['name'] == target_name:
             p_info['eliminated'] = False
@@ -308,7 +288,6 @@ def on_admin_reveal(data):
     game = salons[room_code]
     sol = game['solution']
     
-    # Renvoie le résultat EXCLUSIVEMENT au socket de l'admin Bedy (request.sid)
     if sol:
         emit('admin_reveal_result', {
             'suspect': sol['suspect'],
@@ -328,11 +307,9 @@ def handle_disconnect():
                 
             emit('log', {'msg': f"🏃 {nom} a quitté la partie."}, to=room_code)
             
-            # Si le salon est vide, on le supprime
             if not game['players']:
                 del salons[room_code]
             else:
-                # Réorganiser la liste graphique et les tours
                 liste_noms = [p['name'] for p in game['players'].values()]
                 emit('room_update', {'room': room_code, 'players': liste_noms}, to=room_code)
                 if game['started'] and len(game['order']) > 0:
