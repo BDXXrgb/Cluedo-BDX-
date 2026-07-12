@@ -2,6 +2,7 @@ import random
 import time
 import json
 import os
+import re
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
@@ -12,6 +13,12 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 SUSPECTS = ["Mlle Rose", "Colonel Moutarde", "Mme Pervenche", "Docteur Olive", "Mme Leblanc", "Professeur Violet"]
 ARMES = ["Chandelier", "Couteau", "Revolver", "Corde", "Matraque", "Clé Anglaise"]
 LIEUX = ["Salon", "Véranda", "Salle de Bal", "Salle à Manger", "Cuisine", "Bibliothèque", "Billard", "Bureau", "Hall"]
+
+# 🤬 LISTE DES MOTS BANNIS (Gros mots et insultes)
+BAD_WORDS = [
+    r"fils de p\w*", r"putain", r"merde", r"connard", r"salope", 
+    r"encul\w*", r"fdp", r"ntm", r"chiasse", r"bâtard"
+]
 
 salons = {}
 LEADERBOARD_FILE = "leaderboard.json"
@@ -36,6 +43,16 @@ def save_victory(username):
     except Exception as e:
         print("Erreur écriture classement :", e)
 
+# 🔒 FONCTION DE SÉCURITÉ : Détection et Censure
+def check_and_censor(text):
+    censored = text
+    found_bad = False
+    for pattern in BAD_WORDS:
+        if re.search(pattern, censored, re.IGNORECASE):
+            censored = re.sub(pattern, "####", censored, flags=re.IGNORECASE)
+            found_bad = True
+    return censored, found_bad
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -55,7 +72,7 @@ def handle_create_game(data):
             break
             
     salons[room_code] = {
-        'players': {request.sid: {'name': username, 'cards': [], 'piece': 'Hall', 'eliminated': False}},
+        'players': {request.sid: {'name': username, 'cards': [], 'piece': 'Hall', 'eliminated': False, 'warnings': 0}},
         'order': [request.sid],
         'turn_idx': 0,
         'solution': {},
@@ -82,11 +99,10 @@ def handle_join_game(data):
         emit('error_msg', {'msg': "Le salon est plein (max 6 joueurs)."})
         return
 
-    game['players'][request.sid] = {'name': username, 'cards': [], 'piece': 'Hall', 'eliminated': False}
+    game['players'][request.sid] = {'name': username, 'cards': [], 'piece': 'Hall', 'eliminated': False, 'warnings': 0}
     game['order'].append(request.sid)
     join_room(room_code)
     liste_noms = [p['name'] for p in game['players'].values()]
-    # ICI : Correction de list_noms en liste_noms
     emit('room_update', {'room': room_code, 'players': liste_noms}, to=room_code)
 
 @socketio.on('join_in_game')
@@ -102,21 +118,22 @@ def handle_join_in_game(data):
         emit('error_msg', {'msg': "La partie n'a pas encore commencé. Rejoignez normalement !"})
         return
 
-    game['players'][request.sid] = {'name': username, 'cards': [], 'piece': 'Hall', 'eliminated': False}
+    game['players'][request.sid] = {'name': username, 'cards': [], 'piece': 'Hall', 'eliminated': False, 'warnings': 0}
     game['order'].append(request.sid)
     join_room(room_code)
 
+    # Rééquilibrage équitable pour le nouveau joueur
     cartes_attribuees = []
     if game['remaining_deck']:
         nb_a_prendre = min(3, len(game['remaining_deck']))
         for _ in range(nb_a_prendre):
             cartes_attribuees.append(game['remaining_deck'].pop(0))
     else:
+        # On pioche chez ceux qui en ont le plus pour équilibrer
         for sid, p in game['players'].items():
             if sid != request.sid and len(p['cards']) > 3:
-                c = p['cards'].pop()
-                cartes_attribuees.append(c)
-                if len(cartes_attribuees) >= 2:
+                cartes_attribuees.append(p['cards'].pop())
+                if len(cartes_attribuees) >= 3:
                     break
 
     game['players'][request.sid]['cards'] = cartes_attribuees
@@ -134,8 +151,31 @@ def handle_chat_msg(data):
     msg = data.get('msg', '').strip()
     if room_code not in salons or not msg:
         return
-    sender_name = salons[room_code]['players'][request.sid]['name']
-    emit('log', {'msg': f"<b>{sender_name} :</b> {msg}", 'type': 'chat'}, to=room_code)
+    
+    game = salons[room_code]
+    player = game['players'][request.sid]
+    
+    # Vérification sécurité insultes
+    clean_msg, has_insult = check_and_censor(msg)
+    
+    if has_insult:
+        player['warnings'] += 1
+        if player['warnings'] >= 2:
+            # Élimination directe si récidive
+            player['eliminated'] = True
+            emit('log', {'msg': f"🤬 <b>{player['name']}</b> a envoyé un message inapproprié : <span style='color:red;'>{clean_msg}</span>", 'type': 'chat'}, to=room_code)
+            emit('log', {'msg': f"💀 <b>SÉCURITÉ :</b> {player['name']} a été éliminé pour comportement toxique !", 'type': 'elimination'}, to=room_code)
+            emit('player_eliminated', to=request.sid)
+            if request.sid == game['order'][game['turn_idx']]:
+                passer_au_tour_suivant(room_code)
+            return
+        else:
+            # Simple avertissement
+            emit('log', {'msg': f"🤬 <b>{player['name']} :</b> {clean_msg}", 'type': 'chat'}, to=room_code)
+            emit('log', {'msg': f"⚠️ <b>Avertissement Sécurité</b> pour {player['name']}. Attention à votre langage (1/2) !", 'type': 'admin'}, to=room_code)
+            return
+
+    emit('log', {'msg': f"<b>{player['name']} :</b> {clean_msg}", 'type': 'chat'}, to=room_code)
 
 @socketio.on('start_game')
 def handle_start_game(data):
@@ -167,7 +207,7 @@ def handle_start_game(data):
     for sid, p_info in game['players'].items():
         emit('game_started', {'cards': p_info['cards'], 'is_rejoin': False}, to=sid)
         
-    emit('log', {'msg': "🚀 <b>L'enquête commence ! Cochez vos indices de départ.</b>", 'type': 'system'}, to=room_code)
+    emit('log', {'msg': "🚀 <b>L'enquête commence ! Respectez les autres joueurs dans le chat.</b>", 'type': 'system'}, to=room_code)
     for sid, p_info in game['players'].items():
         emit('pion_update', {'sid': sid, 'name': p_info['name'], 'piece': 'Hall'}, to=room_code)
         
@@ -226,6 +266,7 @@ def handle_hypothese(data):
     demandeur_nom = game['players'][demandeur_sid]['name']
     emit('log', {'msg': f"🔍 <b>{demandeur_nom}</b> soupçonne : <i>{suspect} / {arme} / {lieu}</i>.", 'type': 'hypothese'}, to=room_code)
     
+    # REGLE : On amène automatiquement le suspect désigné dans la pièce
     for sid, p_info in game['players'].items():
         if p_info['name'] == suspect:
             p_info['piece'] = lieu
@@ -268,14 +309,13 @@ def handle_accusation(data):
         emit('game_over_event', {'msg': f"🎉 VICTOIRE ! {nom_acc} a démasqué {sol['suspect']} ({sol['arme']} / {sol['lieu']}) !", 'status': 'win'}, to=room_code)
         game['started'] = False
     else:
-        emit('log', {'msg': f"💀 <b>Fausse piste !</b> {nom_acc} est éliminé !", 'type': 'elimination'}, to=room_code)
+        emit('log', {'msg': f"💀 <b>Fausse piste !</b> {nom_acc} a perdu mais reste pour montrer ses cartes.", 'type': 'elimination'}, to=room_code)
         game['players'][request.sid]['eliminated'] = True
         emit('player_eliminated', to=request.sid)
-        emit('trigger_danger_alert', to=room_code)
         
         actifs = [s for s, p in game['players'].items() if not p['eliminated']]
         if not actifs:
-            emit('game_over_event', {'msg': f"💀 Fin ! Solution : {sol['suspect']} ({sol['arme']} / {sol['lieu']})", 'status': 'fail'}, to=room_code)
+            emit('game_over_event', {'msg': f"💀 Fin de partie ! La solution était : {sol['suspect']} ({sol['arme']} / {sol['lieu']})", 'status': 'fail'}, to=room_code)
             game['started'] = False
         else:
             passer_au_tour_suivant(room_code)
@@ -321,7 +361,6 @@ def on_admin_kill(data):
         if p_info['name'] == target_name:
             p_info['eliminated'] = True
             emit('player_eliminated', to=sid)
-            emit('trigger_danger_alert', to=room_code)
             emit('log', {'msg': f"⚙️ <b>[ADMIN]</b> Bedy a éliminé 💀 <b>{target_name}</b> !", 'type': 'admin'}, to=room_code)
             if sid == salons[room_code]['order'][salons[room_code]['turn_idx']]:
                 passer_au_tour_suivant(room_code)
@@ -346,7 +385,7 @@ def on_admin_skip(data):
     if room_code not in salons:
         return
     emit('log', {'msg': "⚙️ <b>[ADMIN]</b> Bedy a sauté le tour.", 'type': 'admin'}, to=room_code)
-    passer_au_tour_suivant(room_code)
+    passer_au_turn_suivant(room_code)
 
 @socketio.on('admin_reset_game')
 def on_admin_reset(data):
