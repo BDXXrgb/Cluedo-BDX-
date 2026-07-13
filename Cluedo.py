@@ -410,18 +410,24 @@ def handle_disconnect():
                 envoyer_changement_tour(room_code)
             break
 
-@socketio.on('montrer_carte_specifique')
-def handle_montrer_carte(data):
-    target_sid = data.get('target_sid') # Le joueur qui fait l'hypothèse
-    carte_a_voir = data.get('carte')
-    joueur_qui_montre = data.get('sender_name') # Le nom de celui qui montre
+# Dans ton fichier Cluedo.py, cherche la fonction qui traite l'envoi de la carte
+# Exemple : def montrer_carte_action(data):
 
-    # 1. Message privé pour celui qui a fait l'hypothèse (il voit le nom de la carte)
-    emit('log', {'msg': f"🕵️ {joueur_qui_montre} vous a montré : {carte_a_voir}"}, to=target_sid)
+def montrer_carte_action(data):
+    # 'data' contient probablement le joueur qui montre et celui qui a fait l'hypothèse
+    joueur_qui_montre = data['sender']
+    joueur_demandeur_sid = data['target_sid'] # L'identifiant du joueur qui a fait l'hypothèse
+    carte_montree = data['card']
+
+    # 1. MESSAGE PRIVÉ (pour le demandeur uniquement)
+    # On lui envoie le nom précis de la carte
+    emit('log', {'msg': f"🕵️ {joueur_qui_montre} vous a montré : {carte_montree}"}, to=joueur_demandeur_sid)
     
-    # 2. Message public pour les autres (ils voient juste que l'action a eu lieu)
-    # On utilise broadcast=True, mais on exclut le demandeur (s'il est inclus)
-    emit('log', {'msg': f"📢 {joueur_qui_montre} a montré une carte à un autre joueur."}, broadcast=True, include_self=False)
+    # 2. MESSAGE PUBLIC (pour les autres joueurs)
+    # On broadcast le message générique à tout le monde SAUF au demandeur
+    for sid in list_des_sids_des_joueurs:
+        if sid != joueur_demandeur_sid:
+            emit('log', {'msg': f"📢 {joueur_qui_montre} a montré un indice à {data['target_name']}."}, to=sid)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
