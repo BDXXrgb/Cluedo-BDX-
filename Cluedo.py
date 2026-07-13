@@ -410,5 +410,18 @@ def handle_disconnect():
                 envoyer_changement_tour(room_code)
             break
 
+@socketio.on('montrer_carte_specifique')
+def handle_montrer_carte(data):
+    target_sid = data.get('target_sid') # Le joueur qui fait l'hypothèse
+    carte_a_voir = data.get('carte')
+    joueur_qui_montre = data.get('sender_name') # Le nom de celui qui montre
+
+    # 1. Message privé pour celui qui a fait l'hypothèse (il voit le nom de la carte)
+    emit('log', {'msg': f"🕵️ {joueur_qui_montre} vous a montré : {carte_a_voir}"}, to=target_sid)
+    
+    # 2. Message public pour les autres (ils voient juste que l'action a eu lieu)
+    # On utilise broadcast=True, mais on exclut le demandeur (s'il est inclus)
+    emit('log', {'msg': f"📢 {joueur_qui_montre} a montré une carte à un autre joueur."}, broadcast=True, include_self=False)
+
 if __name__ == '__main__':
     socketio.run(app, debug=True)
